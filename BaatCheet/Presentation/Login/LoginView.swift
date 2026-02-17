@@ -8,7 +8,6 @@
 import SwiftUI
 import GoogleSignIn
 
-// MARK: - Carousel Slide
 struct CarouselSlide: Identifiable {
     let id = UUID()
     let backgroundColor: Color
@@ -18,43 +17,38 @@ struct CarouselSlide: Identifiable {
 }
 
 struct LoginView: View {
-    // MARK: - Environment
     @EnvironmentObject private var authViewModel: AuthViewModel
     
-    // MARK: - State
     @State private var currentSlideIndex = 0
     @State private var displayedText = ""
     @State private var timer: Timer?
     
-    // MARK: - Slides (Matching Android)
     private let slides = [
         CarouselSlide(backgroundColor: Color(hex: "7BE8BE"), text: "", hasImage: true),
         CarouselSlide(backgroundColor: Color(hex: "9EF8EE"), text: "Let's brainstorm", textColor: Color(hex: "0000F5")),
         CarouselSlide(backgroundColor: Color(hex: "0000F5"), text: "Let's go", textColor: Color(hex: "9EF8EE"))
     ]
     
-    // MARK: - Body
     var body: some View {
-        ZStack(alignment: .bottom) {
-            // Full edge-to-edge background color
-            slides[currentSlideIndex].backgroundColor
-                .ignoresSafeArea()
-                .animation(.easeInOut(duration: 1.0), value: currentSlideIndex)
-            
-            // Content centered in the carousel area
-            VStack {
-                Spacer()
-                contentView
-                Spacer()
-            }
-            .padding(.bottom, bottomSheetHeight)
-            
-            // Bottom sheet pinned to bottom
-            VStack(spacing: 0) {
-                Spacer()
+        GeometryReader { geo in
+            ZStack(alignment: .bottom) {
+                // Background fills entire screen including safe areas
+                slides[currentSlideIndex].backgroundColor
+                    .animation(.easeInOut(duration: 1.0), value: currentSlideIndex)
+                
+                // Carousel content centered vertically in the top portion
+                VStack {
+                    Spacer()
+                    contentView
+                    Spacer()
+                }
+                .frame(width: geo.size.width, height: geo.size.height - bottomSheetContentHeight + 38)
+                .clipped()
+                
+                // Bottom sheet at the very bottom
                 bottomSheet
             }
-            .ignoresSafeArea(.container, edges: .bottom)
+            .ignoresSafeArea(.all)
         }
         .navigationBarHidden(true)
         .onAppear { startCarouselTimer() }
@@ -66,9 +60,9 @@ struct LoginView: View {
         }
     }
     
-    private var bottomSheetHeight: CGFloat { 240 }
+    // Height of the black bottom sheet content area
+    private var bottomSheetContentHeight: CGFloat { 280 }
     
-    // MARK: - Content View
     @ViewBuilder
     private var contentView: some View {
         if slides[currentSlideIndex].hasImage {
@@ -85,10 +79,8 @@ struct LoginView: View {
         }
     }
     
-    // MARK: - Bottom Sheet (3 buttons: Google, Email, Log in)
     private var bottomSheet: some View {
         VStack(spacing: 12) {
-            // Continue with Google
             Button(action: handleGoogleSignIn) {
                 HStack(spacing: 10) {
                     if authViewModel.isGoogleLoading {
@@ -109,7 +101,6 @@ struct LoginView: View {
             }
             .disabled(authViewModel.isGoogleLoading)
             
-            // Sign up with email
             NavigationLink(destination: EmailAuthView(mode: .signup)) {
                 HStack(spacing: 10) {
                     Image(systemName: "envelope.fill")
@@ -124,7 +115,6 @@ struct LoginView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 14))
             }
             
-            // Log in (outlined)
             NavigationLink(destination: EmailAuthView(mode: .signin)) {
                 Text("Log in")
                     .font(.system(size: 20, weight: .medium))
@@ -140,6 +130,7 @@ struct LoginView: View {
         .padding(.horizontal, 25)
         .padding(.top, 25)
         .padding(.bottom, 50)
+        .frame(maxWidth: .infinity)
         .background(Color.black)
         .clipShape(
             .rect(
@@ -151,7 +142,6 @@ struct LoginView: View {
         )
     }
     
-    // MARK: - Timer
     private func startCarouselTimer() {
         timer = Timer.scheduledTimer(withTimeInterval: 4.0, repeats: true) { _ in
             withAnimation(.easeInOut(duration: 0.5)) {
@@ -165,7 +155,6 @@ struct LoginView: View {
         let targetText = slides[currentSlideIndex].text
         displayedText = ""
         guard !targetText.isEmpty else { return }
-        
         var charIndex = 0
         Timer.scheduledTimer(withTimeInterval: 0.08, repeats: true) { timer in
             if charIndex < targetText.count {
@@ -178,16 +167,13 @@ struct LoginView: View {
         }
     }
     
-    // MARK: - Google Sign-In
     private func handleGoogleSignIn() {
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let rootVC = windowScene.windows.first?.rootViewController else {
             authViewModel.error = "Unable to find root view controller"
             return
         }
-        
         authViewModel.isGoogleLoading = true
-        
         GIDSignIn.sharedInstance.signIn(withPresenting: rootVC) { result, error in
             Task { @MainActor in
                 if let error = error {
@@ -197,13 +183,11 @@ struct LoginView: View {
                     authViewModel.isGoogleLoading = false
                     return
                 }
-                
                 guard let idToken = result?.user.idToken?.tokenString else {
                     authViewModel.error = "Failed to get Google ID token"
                     authViewModel.isGoogleLoading = false
                     return
                 }
-                
                 await authViewModel.signInWithGoogle(idToken: idToken)
             }
         }
