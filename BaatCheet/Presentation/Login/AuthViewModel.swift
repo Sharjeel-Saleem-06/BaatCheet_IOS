@@ -39,7 +39,7 @@ final class AuthViewModel: ObservableObject {
     private let signInWithAppleUseCase: SignInWithAppleUseCase
     private let verifyEmailUseCase: VerifyEmailUseCase
     private let logoutUseCase: LogoutUseCase
-    private let authRepository: AuthRepository
+    let authRepository: AuthRepository
     
     // MARK: - Init
     init(

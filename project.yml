@@ -8,6 +8,11 @@ options:
   groupSortPosition: top
   createIntermediateGroups: true
 
+packages:
+  GoogleSignIn:
+    url: https://github.com/google/GoogleSignIn-iOS
+    from: "7.0.0"
+
 settings:
   base:
     SWIFT_VERSION: "5.9"
@@ -26,9 +31,12 @@ targets:
         excludes:
           - "Sources/**"
           - "Resources/Info.plist"
+          - "Resources/GoogleService-Info.plist"
     resources:
       - path: BaatCheet/Resources/Assets.xcassets
       - path: BaatCheet/Resources/Fonts
+        buildPhase: resources
+      - path: BaatCheet/Resources/GoogleService-Info.plist
         buildPhase: resources
     info:
       path: BaatCheet/Resources/Info.plist
@@ -51,7 +59,8 @@ targets:
       properties:
         com.apple.developer.associated-domains:
           - "applinks:baatcheet-web.netlify.app"
-    dependencies: []
+    dependencies:
+      - package: GoogleSignIn
 
   BaatCheetTests:
     type: bundle.unit-test

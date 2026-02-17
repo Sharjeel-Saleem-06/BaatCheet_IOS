@@ -11,49 +11,44 @@ struct SplashView: View {
     // MARK: - State
     @State private var logoScale: CGFloat = 0.5
     @State private var logoOpacity: Double = 0
-    @State private var textOpacity: Double = 0
+    @State private var loaderOpacity: Double = 0
     
     // MARK: - Body
     var body: some View {
         ZStack {
-            // Gradient Background
-            LinearGradient(
-                gradient: Gradient(colors: [Color.bcSecondary, Color.bcTertiary]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            // White background (matching Android)
+            Color.white
+                .ignoresSafeArea()
             
-            VStack(spacing: BCSpacing.xl) {
-                // Logo
-                Image("login_image") // Same as Android
+            VStack(spacing: 48) {
+                // Logo with rounded corners (matching Android: 350x350dp, cornerRadius 70)
+                Image("SplashLogo")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 200, height: 94)
+                    .frame(width: 220, height: 220)
+                    .clipShape(RoundedRectangle(cornerRadius: 44))
+                    .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 8)
                     .scaleEffect(logoScale)
                     .opacity(logoOpacity)
                 
-                // App Name
-                Text("BaatCheet")
-                    .font(.bcLargeTitle)
-                    .foregroundColor(.bcPrimary)
-                    .opacity(textOpacity)
-                
-                // Tagline
-                Text("Your AI Companion")
-                    .font(.bcBody)
-                    .foregroundColor(.bcPrimary.opacity(0.7))
-                    .opacity(textOpacity)
+                // Loading indicator (matching Android: BrandBlue #1E3A8A, 32dp, stroke 3)
+                ProgressView()
+                    .controlSize(.regular)
+                    .tint(Color(hex: "1E3A8A"))
+                    .scaleEffect(1.2)
+                    .opacity(loaderOpacity)
             }
         }
         .onAppear {
-            withAnimation(.easeOut(duration: 0.8)) {
+            // Logo animation: scale 0.5 -> 1 with spring (matching Android: DampingRatioMediumBouncy)
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.6, blendDuration: 0)) {
                 logoScale = 1.0
                 logoOpacity = 1.0
             }
             
-            withAnimation(.easeOut(duration: 0.8).delay(0.3)) {
-                textOpacity = 1.0
+            // Loader appears with 200ms delay (matching Android)
+            withAnimation(.easeOut(duration: 0.5).delay(0.2)) {
+                loaderOpacity = 1.0
             }
         }
     }

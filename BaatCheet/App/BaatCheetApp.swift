@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import GoogleSignIn
 
 @main
 struct BaatCheetApp: App {
@@ -16,13 +17,11 @@ struct BaatCheetApp: App {
     
     // MARK: - Init
     init() {
-        // Initialize dependencies
         let container = DependencyContainer.shared
         
         _authViewModel = StateObject(wrappedValue: container.authViewModel)
         _chatViewModel = StateObject(wrappedValue: container.chatViewModel)
         
-        // Configure appearance
         configureAppearance()
     }
     
@@ -34,6 +33,11 @@ struct BaatCheetApp: App {
                 .environmentObject(authViewModel)
                 .environmentObject(chatViewModel)
                 .onOpenURL { url in
+                    // Handle Google Sign-In callback
+                    if GIDSignIn.sharedInstance.handle(url) {
+                        return
+                    }
+                    // Handle deep links
                     handleDeepLink(url)
                 }
         }
@@ -41,7 +45,6 @@ struct BaatCheetApp: App {
     
     // MARK: - Private Methods
     private func configureAppearance() {
-        // Configure navigation bar appearance
         let appearance = UINavigationBarAppearance()
         appearance.configureWithOpaqueBackground()
         appearance.backgroundColor = UIColor.systemBackground
@@ -52,7 +55,6 @@ struct BaatCheetApp: App {
         UINavigationBar.appearance().scrollEdgeAppearance = appearance
         UINavigationBar.appearance().compactAppearance = appearance
         
-        // Configure tab bar
         let tabBarAppearance = UITabBarAppearance()
         tabBarAppearance.configureWithOpaqueBackground()
         UITabBar.appearance().standardAppearance = tabBarAppearance
