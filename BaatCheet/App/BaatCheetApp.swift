@@ -45,16 +45,6 @@ struct BaatCheetApp: App {
     
     // MARK: - Private Methods
     private func configureAppearance() {
-        // Navigation bar - transparent by default so views can go edge-to-edge
-        let appearance = UINavigationBarAppearance()
-        appearance.configureWithTransparentBackground()
-        appearance.titleTextAttributes = [.foregroundColor: UIColor.label]
-        appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.label]
-        
-        UINavigationBar.appearance().standardAppearance = appearance
-        UINavigationBar.appearance().scrollEdgeAppearance = appearance
-        UINavigationBar.appearance().compactAppearance = appearance
-        
         let tabBarAppearance = UITabBarAppearance()
         tabBarAppearance.configureWithOpaqueBackground()
         UITabBar.appearance().standardAppearance = tabBarAppearance

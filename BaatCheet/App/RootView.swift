@@ -8,24 +8,21 @@
 import SwiftUI
 
 struct RootView: View {
-    // MARK: - Environment
     @EnvironmentObject private var appState: AppState
     @EnvironmentObject private var authViewModel: AuthViewModel
     
-    // MARK: - Body
     var body: some View {
-        ZStack {
+        Group {
             if appState.isShowingSplash {
                 SplashView()
-                    .transition(.opacity)
             } else if authViewModel.isAuthenticated {
                 MainTabView()
-                    .transition(.opacity)
             } else {
                 NavigationStack {
                     LoginView()
+                        .navigationBarHidden(true)
                 }
-                .transition(.opacity)
+                .toolbar(.hidden, for: .navigationBar)
             }
         }
         .animation(.easeInOut(duration: 0.3), value: appState.isShowingSplash)
@@ -35,12 +32,8 @@ struct RootView: View {
         }
     }
     
-    // MARK: - Private Methods
     private func checkAuthAndHideSplash() {
-        // Check authentication status
         authViewModel.checkAuthentication()
-        
-        // Hide splash after delay
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
             withAnimation {
                 appState.isShowingSplash = false
@@ -49,7 +42,6 @@ struct RootView: View {
     }
 }
 
-// MARK: - Main Tab View
 struct MainTabView: View {
     @EnvironmentObject private var appState: AppState
     
