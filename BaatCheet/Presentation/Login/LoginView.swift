@@ -30,27 +30,22 @@ struct LoginView: View {
     ]
     
     var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .bottom) {
-                // Background fills entire screen including safe areas
-                slides[currentSlideIndex].backgroundColor
-                    .animation(.easeInOut(duration: 1.0), value: currentSlideIndex)
-                
-                // Carousel content centered vertically in the top portion
-                VStack {
-                    Spacer()
-                    contentView
-                    Spacer()
-                }
-                .frame(width: geo.size.width, height: geo.size.height - bottomSheetContentHeight + 38)
-                .clipped()
-                
-                // Bottom sheet at the very bottom
-                bottomSheet
-            }
-            .ignoresSafeArea(.all)
+        ZStack(alignment: .bottom) {
+            // Background - this single Color view fills everything
+            slides[currentSlideIndex].backgroundColor
+                .animation(.easeInOut(duration: 1.0), value: currentSlideIndex)
+            
+            // Content in top area
+            contentView
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .padding(.bottom, 250)
+            
+            // Bottom sheet pinned to bottom edge
+            bottomSheet
         }
+        .ignoresSafeArea(.all)
         .navigationBarHidden(true)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .onAppear { startCarouselTimer() }
         .onDisappear { timer?.invalidate() }
         .alert("Error", isPresented: .constant(authViewModel.error != nil)) {
@@ -59,9 +54,6 @@ struct LoginView: View {
             Text(authViewModel.error ?? "")
         }
     }
-    
-    // Height of the black bottom sheet content area
-    private var bottomSheetContentHeight: CGFloat { 280 }
     
     @ViewBuilder
     private var contentView: some View {
@@ -129,7 +121,7 @@ struct LoginView: View {
         }
         .padding(.horizontal, 25)
         .padding(.top, 25)
-        .padding(.bottom, 50)
+        .padding(.bottom, 34)
         .frame(maxWidth: .infinity)
         .background(Color.black)
         .clipShape(
