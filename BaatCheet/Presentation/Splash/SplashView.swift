@@ -13,9 +13,11 @@ struct SplashView: View {
     @State private var loaderOpacity: Double = 0
     
     var body: some View {
-        Color.white
-            .ignoresSafeArea(.all)
-            .overlay {
+        GeometryReader { geo in
+            ZStack {
+                Color.white
+                    .frame(width: geo.size.width, height: geo.size.height)
+                
                 VStack(spacing: 48) {
                     Image("SplashLogo")
                         .resizable()
@@ -33,15 +35,18 @@ struct SplashView: View {
                         .opacity(loaderOpacity)
                 }
             }
-            .onAppear {
-                withAnimation(.spring(response: 0.6, dampingFraction: 0.6, blendDuration: 0)) {
-                    logoScale = 1.0
-                    logoOpacity = 1.0
-                }
-                withAnimation(.easeOut(duration: 0.5).delay(0.2)) {
-                    loaderOpacity = 1.0
-                }
+            .frame(width: geo.size.width, height: geo.size.height)
+        }
+        .ignoresSafeArea(.all)
+        .onAppear {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.6, blendDuration: 0)) {
+                logoScale = 1.0
+                logoOpacity = 1.0
             }
+            withAnimation(.easeOut(duration: 0.5).delay(0.2)) {
+                loaderOpacity = 1.0
+            }
+        }
     }
 }
 

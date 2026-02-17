@@ -29,15 +29,14 @@ struct BaatCheetApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
+                .ignoresSafeArea(.all)
                 .environmentObject(appState)
                 .environmentObject(authViewModel)
                 .environmentObject(chatViewModel)
                 .onOpenURL { url in
-                    // Handle Google Sign-In callback
                     if GIDSignIn.sharedInstance.handle(url) {
                         return
                     }
-                    // Handle deep links
                     handleDeepLink(url)
                 }
         }
