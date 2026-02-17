@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import AuthenticationServices
 import GoogleSignIn
 
 // MARK: - Carousel Slide
@@ -21,16 +20,13 @@ struct CarouselSlide: Identifiable {
 struct LoginView: View {
     // MARK: - Environment
     @EnvironmentObject private var authViewModel: AuthViewModel
-    @Environment(\.colorScheme) private var colorScheme
     
     // MARK: - State
     @State private var currentSlideIndex = 0
     @State private var displayedText = ""
     @State private var timer: Timer?
-    @State private var showEmailAuth = false
-    @State private var emailAuthMode: AuthMode = .signup
     
-    // MARK: - Slides (Matching Android exactly)
+    // MARK: - Slides (Matching Android)
     private let slides = [
         CarouselSlide(backgroundColor: Color(hex: "7BE8BE"), text: "", hasImage: true),
         CarouselSlide(backgroundColor: Color(hex: "9EF8EE"), text: "Let's brainstorm", textColor: Color(hex: "0000F5")),
@@ -39,74 +35,64 @@ struct LoginView: View {
     
     // MARK: - Body
     var body: some View {
-        GeometryReader { geometry in
-            ZStack(alignment: .bottom) {
-                // Animated Background (1000ms transition matching Android)
-                slides[currentSlideIndex].backgroundColor
-                    .ignoresSafeArea()
-                    .animation(.easeInOut(duration: 1.0), value: currentSlideIndex)
-                
-                VStack(spacing: 0) {
-                    Spacer()
-                    
-                    // Content Area
-                    contentView
-                        .frame(maxWidth: .infinity)
-                        .frame(height: geometry.size.height * 0.45)
-                    
-                    Spacer()
-                    
-                    // Bottom Sheet (matching Android: black, rounded top 38dp)
-                    bottomSheet
-                }
+        ZStack(alignment: .bottom) {
+            // Full edge-to-edge background color
+            slides[currentSlideIndex].backgroundColor
+                .ignoresSafeArea()
+                .animation(.easeInOut(duration: 1.0), value: currentSlideIndex)
+            
+            // Content centered in the carousel area
+            VStack {
+                Spacer()
+                contentView
+                Spacer()
             }
+            .padding(.bottom, bottomSheetHeight)
+            
+            // Bottom sheet pinned to bottom
+            VStack(spacing: 0) {
+                Spacer()
+                bottomSheet
+            }
+            .ignoresSafeArea(.container, edges: .bottom)
         }
         .navigationBarHidden(true)
-        .onAppear {
-            startCarouselTimer()
-        }
-        .onDisappear {
-            timer?.invalidate()
-        }
+        .onAppear { startCarouselTimer() }
+        .onDisappear { timer?.invalidate() }
         .alert("Error", isPresented: .constant(authViewModel.error != nil)) {
-            Button("OK") {
-                authViewModel.clearError()
-            }
+            Button("OK") { authViewModel.clearError() }
         } message: {
             Text(authViewModel.error ?? "")
         }
     }
     
+    private var bottomSheetHeight: CGFloat { 240 }
+    
     // MARK: - Content View
     @ViewBuilder
     private var contentView: some View {
         if slides[currentSlideIndex].hasImage {
-            // Logo image (matching Android: 292x137dp, scale 0.8->1 spring)
             Image("LoginImage")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 292, height: 137)
-                .transition(.scale.combined(with: .opacity))
         } else {
-            // Typewriter text (matching Android: 34sp, FontWeight.Medium)
             Text(displayedText)
                 .font(.system(size: 34, weight: .medium))
                 .foregroundColor(slides[currentSlideIndex].textColor)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
-                .transition(.opacity)
         }
     }
     
-    // MARK: - Bottom Sheet
+    // MARK: - Bottom Sheet (3 buttons: Google, Email, Log in)
     private var bottomSheet: some View {
         VStack(spacing: 12) {
-            // Continue with Google (matching Android: height 50, gray 36% opacity, radius 14)
+            // Continue with Google
             Button(action: handleGoogleSignIn) {
                 HStack(spacing: 10) {
                     if authViewModel.isGoogleLoading {
-                        ProgressView()
-                            .tint(.white)
+                        ProgressView().tint(.white)
                     } else {
                         Image("GoogleIcon")
                             .resizable()
@@ -123,22 +109,7 @@ struct LoginView: View {
             }
             .disabled(authViewModel.isGoogleLoading)
             
-            // Sign in with Apple (matching Android style but using native Apple button)
-            SignInWithAppleButton(
-                onRequest: { request in
-                    request.requestedScopes = [.fullName, .email]
-                },
-                onCompletion: { result in
-                    Task {
-                        await authViewModel.handleAppleSignIn(result: result)
-                    }
-                }
-            )
-            .signInWithAppleButtonStyle(.white)
-            .frame(height: 50)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
-            
-            // Sign up with email (matching Android: gray button with mail icon)
+            // Sign up with email
             NavigationLink(destination: EmailAuthView(mode: .signup)) {
                 HStack(spacing: 10) {
                     Image(systemName: "envelope.fill")
@@ -153,7 +124,7 @@ struct LoginView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 14))
             }
             
-            // Log in (matching Android: outlined, border #38383A)
+            // Log in (outlined)
             NavigationLink(destination: EmailAuthView(mode: .signin)) {
                 Text("Log in")
                     .font(.system(size: 20, weight: .medium))
@@ -168,7 +139,7 @@ struct LoginView: View {
         }
         .padding(.horizontal, 25)
         .padding(.top, 25)
-        .padding(.bottom, 40)
+        .padding(.bottom, 50)
         .background(Color.black)
         .clipShape(
             .rect(
@@ -180,7 +151,7 @@ struct LoginView: View {
         )
     }
     
-    // MARK: - Timer (4s per slide matching Android)
+    // MARK: - Timer
     private func startCarouselTimer() {
         timer = Timer.scheduledTimer(withTimeInterval: 4.0, repeats: true) { _ in
             withAnimation(.easeInOut(duration: 0.5)) {
@@ -190,11 +161,9 @@ struct LoginView: View {
         }
     }
     
-    // Typewriter animation (80ms per character, 300ms delay - matching Android)
     private func animateTypewriter() {
         let targetText = slides[currentSlideIndex].text
         displayedText = ""
-        
         guard !targetText.isEmpty else { return }
         
         var charIndex = 0
