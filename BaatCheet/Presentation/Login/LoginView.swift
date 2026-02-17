@@ -32,45 +32,20 @@ struct LoginView: View {
     ]
     
     var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .bottom) {
-                // Background fills the entire geometry (including safe area)
-                slides[currentSlideIndex].backgroundColor
-                    .frame(width: geo.size.width, height: geo.size.height)
-                    .animation(.easeInOut(duration: 1.0), value: currentSlideIndex)
-                
-                // Content centered in the upper portion (above bottom sheet)
-                VStack {
-                    Spacer()
-                    contentView
-                    Spacer()
-                }
-                .frame(width: geo.size.width, height: geo.size.height - bottomSheetHeight(geo: geo))
-                .position(x: geo.size.width / 2, y: (geo.size.height - bottomSheetHeight(geo: geo)) / 2)
-                
-                // Bottom sheet at bottom
-                VStack(spacing: 12) {
-                    googleButton
-                    signUpButton
-                    logInButton
-                }
-                .padding(.horizontal, 25)
-                .padding(.top, 25)
-                .padding(.bottom, max(geo.safeAreaInsets.bottom, 20) + 14)
-                .frame(width: geo.size.width)
-                .background(Color.black)
-                .clipShape(
-                    .rect(
-                        topLeadingRadius: 38,
-                        bottomLeadingRadius: 0,
-                        bottomTrailingRadius: 0,
-                        topTrailingRadius: 38
-                    )
-                )
-            }
-            .frame(width: geo.size.width, height: geo.size.height)
+        ZStack(alignment: .bottom) {
+            // Background fills entire screen including behind status bar & home indicator
+            slides[currentSlideIndex].backgroundColor
+                .animation(.easeInOut(duration: 1.0), value: currentSlideIndex)
+            
+            // Carousel content centered above bottom sheet
+            contentView
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .padding(.bottom, 250)
+            
+            // Bottom sheet pinned to bottom
+            bottomSheet
         }
-        .ignoresSafeArea(.all)
+        .ignoresSafeArea()
         .onAppear { startCarouselTimer() }
         .onDisappear { timer?.invalidate() }
         .alert("Error", isPresented: .constant(authViewModel.error != nil)) {
@@ -78,15 +53,6 @@ struct LoginView: View {
         } message: {
             Text(authViewModel.error ?? "")
         }
-    }
-    
-    private func bottomSheetHeight(geo: GeometryProxy) -> CGFloat {
-        // 3 buttons (50 each) + spacing (12*2) + top padding (25) + bottom padding
-        let buttonsHeight: CGFloat = 50 * 3
-        let spacing: CGFloat = 12 * 2
-        let topPad: CGFloat = 25
-        let bottomPad: CGFloat = max(geo.safeAreaInsets.bottom, 20) + 14
-        return buttonsHeight + spacing + topPad + bottomPad
     }
     
     @ViewBuilder
@@ -105,60 +71,74 @@ struct LoginView: View {
         }
     }
     
-    private var googleButton: some View {
-        Button(action: handleGoogleSignIn) {
-            HStack(spacing: 10) {
-                if authViewModel.isGoogleLoading {
-                    ProgressView().tint(.white)
-                } else {
-                    Image("GoogleIcon")
-                        .resizable()
-                        .frame(width: 20, height: 20)
+    private var bottomSheet: some View {
+        VStack(spacing: 12) {
+            // Continue with Google
+            Button(action: handleGoogleSignIn) {
+                HStack(spacing: 10) {
+                    if authViewModel.isGoogleLoading {
+                        ProgressView().tint(.white)
+                    } else {
+                        Image("GoogleIcon")
+                            .resizable()
+                            .frame(width: 20, height: 20)
+                    }
+                    Text(authViewModel.isGoogleLoading ? "Signing in..." : "Continue with Google")
+                        .font(.system(size: 20, weight: .medium))
                 }
-                Text(authViewModel.isGoogleLoading ? "Signing in..." : "Continue with Google")
-                    .font(.system(size: 20, weight: .medium))
-            }
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity)
-            .frame(height: 50)
-            .background(Color.white.opacity(0.15))
-            .clipShape(RoundedRectangle(cornerRadius: 14))
-        }
-        .disabled(authViewModel.isGoogleLoading)
-    }
-    
-    private var signUpButton: some View {
-        Button {
-            navigateTo?(.emailAuth(isSignIn: false))
-        } label: {
-            HStack(spacing: 10) {
-                Image(systemName: "envelope.fill")
-                    .font(.system(size: 18))
-                Text("Sign up with email")
-                    .font(.system(size: 20, weight: .medium))
-            }
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity)
-            .frame(height: 50)
-            .background(Color.white.opacity(0.15))
-            .clipShape(RoundedRectangle(cornerRadius: 14))
-        }
-    }
-    
-    private var logInButton: some View {
-        Button {
-            navigateTo?(.emailAuth(isSignIn: true))
-        } label: {
-            Text("Log in")
-                .font(.system(size: 20, weight: .medium))
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(Color(hex: "38383A"), lineWidth: 1)
-                )
+                .background(Color.white.opacity(0.15))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+            }
+            .disabled(authViewModel.isGoogleLoading)
+            
+            // Sign up with email
+            Button {
+                navigateTo?(.emailAuth(isSignIn: false))
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "envelope.fill")
+                        .font(.system(size: 18))
+                    Text("Sign up with email")
+                        .font(.system(size: 20, weight: .medium))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(Color.white.opacity(0.15))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+            }
+            
+            // Log in
+            Button {
+                navigateTo?(.emailAuth(isSignIn: true))
+            } label: {
+                Text("Log in")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(Color(hex: "38383A"), lineWidth: 1)
+                    )
+            }
         }
+        .padding(.horizontal, 25)
+        .padding(.top, 25)
+        .padding(.bottom, 34)
+        .frame(maxWidth: .infinity)
+        .background(Color.black)
+        .clipShape(
+            .rect(
+                topLeadingRadius: 38,
+                bottomLeadingRadius: 0,
+                bottomTrailingRadius: 0,
+                topTrailingRadius: 38
+            )
+        )
     }
     
     private func startCarouselTimer() {

@@ -18,5 +18,65 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+
+	<!-- CRITICAL: UILaunchScreen tells iOS this is a modern app that supports edge-to-edge -->
+	<!-- Without this key, iOS runs the app in legacy compatibility mode with black bars -->
+	<key>UILaunchScreen</key>
+	<dict/>
+
+	<!-- Scene manifest for proper SwiftUI lifecycle -->
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+		<key>UISceneConfigurations</key>
+		<dict/>
+	</dict>
+
+	<!-- Support all orientations but prefer portrait -->
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+
+	<!-- Status bar -->
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<true/>
+
+	<!-- Requires full screen -->
+	<key>UIRequiresFullScreen</key>
+	<true/>
+
+	<!-- URL Schemes for Google Sign-In and deep links -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>baatcheet</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>com.baatcheet.app</string>
+		</dict>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.1042263517850-prjeimtvvbrgb902le00msonkunobarq</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>Google Sign-In</string>
+		</dict>
+	</array>
+
+	<!-- Google Sign-In Client ID -->
+	<key>GIDClientID</key>
+	<string>1042263517850-prjeimtvvbrgb902le00msonkunobarq.apps.googleusercontent.com</string>
 </dict>
 </plist>

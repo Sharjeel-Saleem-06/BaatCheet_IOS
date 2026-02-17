@@ -29,7 +29,6 @@ struct BaatCheetApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
-                .ignoresSafeArea(.all)
                 .environmentObject(appState)
                 .environmentObject(authViewModel)
                 .environmentObject(chatViewModel)

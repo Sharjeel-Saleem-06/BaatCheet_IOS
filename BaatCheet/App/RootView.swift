@@ -12,7 +12,7 @@ struct RootView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
     
     var body: some View {
-        ZStack {
+        Group {
             if appState.isShowingSplash {
                 SplashView()
             } else if authViewModel.isAuthenticated {
@@ -21,7 +21,6 @@ struct RootView: View {
                 LoginFlowView()
             }
         }
-        .ignoresSafeArea(.all)
         .animation(.easeInOut(duration: 0.3), value: appState.isShowingSplash)
         .animation(.easeInOut(duration: 0.3), value: authViewModel.isAuthenticated)
         .onAppear {
@@ -56,7 +55,6 @@ struct LoginFlowView: View {
         LoginView(navigateTo: { dest in
             destination = dest
         })
-        .ignoresSafeArea(.all)
         .fullScreenCover(item: $destination) { dest in
             switch dest {
             case .emailAuth(let isSignIn):

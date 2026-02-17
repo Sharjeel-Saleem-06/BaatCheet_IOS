@@ -13,31 +13,27 @@ struct SplashView: View {
     @State private var loaderOpacity: Double = 0
     
     var body: some View {
-        GeometryReader { geo in
-            ZStack {
-                Color.white
-                    .frame(width: geo.size.width, height: geo.size.height)
+        ZStack {
+            Color.white
+
+            VStack(spacing: 48) {
+                Image("SplashLogo")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 220, height: 220)
+                    .clipShape(RoundedRectangle(cornerRadius: 44))
+                    .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 8)
+                    .scaleEffect(logoScale)
+                    .opacity(logoOpacity)
                 
-                VStack(spacing: 48) {
-                    Image("SplashLogo")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 220, height: 220)
-                        .clipShape(RoundedRectangle(cornerRadius: 44))
-                        .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 8)
-                        .scaleEffect(logoScale)
-                        .opacity(logoOpacity)
-                    
-                    ProgressView()
-                        .controlSize(.regular)
-                        .tint(Color(hex: "1E3A8A"))
-                        .scaleEffect(1.2)
-                        .opacity(loaderOpacity)
-                }
+                ProgressView()
+                    .controlSize(.regular)
+                    .tint(Color(hex: "1E3A8A"))
+                    .scaleEffect(1.2)
+                    .opacity(loaderOpacity)
             }
-            .frame(width: geo.size.width, height: geo.size.height)
         }
-        .ignoresSafeArea(.all)
+        .ignoresSafeArea()
         .onAppear {
             withAnimation(.spring(response: 0.6, dampingFraction: 0.6, blendDuration: 0)) {
                 logoScale = 1.0
