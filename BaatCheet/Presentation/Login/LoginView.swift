@@ -19,6 +19,9 @@ struct CarouselSlide: Identifiable {
 struct LoginView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
     
+    // Navigation callback - login screen is NOT inside NavigationStack
+    var navigateTo: ((LoginFlowView.LoginDestination) -> Void)?
+    
     @State private var currentSlideIndex = 0
     @State private var displayedText = ""
     @State private var timer: Timer?
@@ -31,21 +34,19 @@ struct LoginView: View {
     
     var body: some View {
         ZStack(alignment: .bottom) {
-            // Background - this single Color view fills everything
+            // Background color fills entire screen
             slides[currentSlideIndex].backgroundColor
                 .animation(.easeInOut(duration: 1.0), value: currentSlideIndex)
             
-            // Content in top area
+            // Carousel content centered above the bottom sheet
             contentView
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 .padding(.bottom, 250)
             
-            // Bottom sheet pinned to bottom edge
+            // Bottom sheet
             bottomSheet
         }
         .ignoresSafeArea(.all)
-        .navigationBarHidden(true)
-        .toolbarBackground(.hidden, for: .navigationBar)
         .onAppear { startCarouselTimer() }
         .onDisappear { timer?.invalidate() }
         .alert("Error", isPresented: .constant(authViewModel.error != nil)) {
@@ -73,6 +74,7 @@ struct LoginView: View {
     
     private var bottomSheet: some View {
         VStack(spacing: 12) {
+            // Continue with Google
             Button(action: handleGoogleSignIn) {
                 HStack(spacing: 10) {
                     if authViewModel.isGoogleLoading {
@@ -93,7 +95,10 @@ struct LoginView: View {
             }
             .disabled(authViewModel.isGoogleLoading)
             
-            NavigationLink(destination: EmailAuthView(mode: .signup)) {
+            // Sign up with email
+            Button {
+                navigateTo?(.emailAuth(isSignIn: false))
+            } label: {
                 HStack(spacing: 10) {
                     Image(systemName: "envelope.fill")
                         .font(.system(size: 18))
@@ -107,7 +112,10 @@ struct LoginView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 14))
             }
             
-            NavigationLink(destination: EmailAuthView(mode: .signin)) {
+            // Log in
+            Button {
+                navigateTo?(.emailAuth(isSignIn: true))
+            } label: {
                 Text("Log in")
                     .font(.system(size: 20, weight: .medium))
                     .foregroundColor(.white)
@@ -187,8 +195,6 @@ struct LoginView: View {
 }
 
 #Preview {
-    NavigationStack {
-        LoginView()
-            .environmentObject(DependencyContainer.shared.authViewModel)
-    }
+    LoginView()
+        .environmentObject(DependencyContainer.shared.authViewModel)
 }

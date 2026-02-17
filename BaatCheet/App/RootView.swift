@@ -18,11 +18,7 @@ struct RootView: View {
             } else if authViewModel.isAuthenticated {
                 MainTabView()
             } else {
-                NavigationStack {
-                    LoginView()
-                        .navigationBarHidden(true)
-                }
-                .toolbar(.hidden, for: .navigationBar)
+                LoginFlowView()
             }
         }
         .animation(.easeInOut(duration: 0.3), value: appState.isShowingSplash)
@@ -37,6 +33,39 @@ struct RootView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
             withAnimation {
                 appState.isShowingSplash = false
+            }
+        }
+    }
+}
+
+// Login flow manages its own navigation without NavigationStack on the root login screen
+struct LoginFlowView: View {
+    @State private var destination: LoginDestination?
+    
+    enum LoginDestination: Identifiable, Hashable {
+        case emailAuth(isSignIn: Bool)
+        
+        var id: String {
+            switch self {
+            case .emailAuth(let isSignIn): return "emailAuth-\(isSignIn)"
+            }
+        }
+    }
+    
+    var body: some View {
+        ZStack {
+            // Login screen is NOT inside NavigationStack so it can be truly edge-to-edge
+            LoginView(navigateTo: { dest in
+                destination = dest
+            })
+        }
+        .fullScreenCover(item: $destination) { dest in
+            switch dest {
+            case .emailAuth(let isSignIn):
+                NavigationStack {
+                    EmailAuthView(mode: isSignIn ? .signin : .signup)
+                }
+                .environmentObject(DependencyContainer.shared.authViewModel)
             }
         }
     }
