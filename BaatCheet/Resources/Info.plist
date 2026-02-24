@@ -75,6 +75,14 @@
 		</dict>
 	</array>
 
+	<!-- Microphone access for voice chat -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>BaatCheet needs microphone access for voice chat.</string>
+
+	<!-- Speech recognition for voice chat -->
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>BaatCheet uses speech recognition to transcribe your voice during voice chat.</string>
+
 	<!-- Google Sign-In Client ID -->
 	<key>GIDClientID</key>
 	<string>1042263517850-prjeimtvvbrgb902le00msonkunobarq.apps.googleusercontent.com</string>

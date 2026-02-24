@@ -56,7 +56,7 @@ final class DependencyContainer {
     }()
     
     lazy var profileRepository: ProfileRepository = {
-        ProfileRepositoryImpl(apiClient: apiClient)
+        ProfileRepositoryImpl(apiClient: apiClient, authRepository: authRepository)
     }()
     
     // MARK: - Use Cases

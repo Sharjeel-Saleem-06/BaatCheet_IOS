@@ -265,13 +265,8 @@ struct EditTeamMessageRequestDTO: Encodable {
     let content: String
 }
 
-// MARK: - Project Conversations Response
+// MARK: - Project Conversations Response (API returns data as array directly)
 struct ProjectConversationsResponseDTO: Decodable {
     let success: Bool
-    let data: ProjectConversationsDataDTO?
-}
-
-struct ProjectConversationsDataDTO: Decodable {
-    let conversations: [ConversationDTO]?
-    let total: Int?
+    let data: [ConversationDTO]?
 }

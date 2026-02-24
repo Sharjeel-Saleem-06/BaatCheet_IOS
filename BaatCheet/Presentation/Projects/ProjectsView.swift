@@ -10,6 +10,7 @@ import SwiftUI
 struct ProjectsView: View {
     // MARK: - State
     @StateObject private var viewModel = DependencyContainer.shared.projectsViewModel
+    @Environment(\.showDrawer) private var showDrawer
     
     // MARK: - Body
     var body: some View {
@@ -74,6 +75,11 @@ struct ProjectsView: View {
         .listStyle(.insetGrouped)
         .navigationTitle("Projects")
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: { showDrawer.wrappedValue = true }) {
+                    Image(systemName: "line.3.horizontal")
+                }
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: { viewModel.showCreateSheet = true }) {
                     Image(systemName: "plus")

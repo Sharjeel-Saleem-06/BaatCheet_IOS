@@ -97,7 +97,7 @@ final class ProjectRepositoryImpl: ProjectRepository {
             return []
         }
         
-        return response.data?.conversations?.map { $0.toDomain() } ?? []
+        return response.data?.map { $0.toDomain() } ?? []
     }
     
     // MARK: - Refresh Project Context

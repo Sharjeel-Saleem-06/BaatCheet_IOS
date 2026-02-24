@@ -57,6 +57,7 @@ final class AppState: ObservableObject {
     @Published var deepLinkConversationId: String?
     @Published var deepLinkShareId: String?
     @Published var selectedTab: Tab = .chat
+    @Published var selectedProjectId: String?
     
     enum Tab: Int, CaseIterable {
         case chat = 0

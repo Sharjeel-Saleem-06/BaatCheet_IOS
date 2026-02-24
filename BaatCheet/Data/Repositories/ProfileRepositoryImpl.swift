@@ -11,27 +11,53 @@ import Foundation
 final class ProfileRepositoryImpl: ProfileRepository {
     // MARK: - Properties
     private let apiClient: APIClient
+    private let authRepository: AuthRepository
     
     // MARK: - Init
-    init(apiClient: APIClient) {
+    init(apiClient: APIClient, authRepository: AuthRepository) {
         self.apiClient = apiClient
+        self.authRepository = authRepository
     }
     
     // MARK: - Get Profile
     func getProfile() async throws -> UserProfile {
+        if let cachedUser = authRepository.getCachedUser() {
+            return UserProfile(from: cachedUser)
+        }
+        
         struct ProfileResponseDTO: Decodable {
             let success: Bool
-            let data: UserDTO?
+            let data: ProfileDataDTO?
+        }
+        
+        struct ProfileDataDTO: Decodable {
+            let profile: ProfileInfoDTO?
+        }
+        
+        struct ProfileInfoDTO: Decodable {
+            let id: String?
+            let userId: String?
+            let fullName: String?
+            let preferredName: String?
         }
         
         let response: ProfileResponseDTO = try await apiClient.get(endpoint: .profileMe)
         
-        guard response.success, let user = response.data else {
+        guard response.success, let profileData = response.data?.profile else {
             throw ProfileError.notFound
         }
         
-        let domainUser = user.toDomain()
-        return UserProfile(from: domainUser)
+        let name = profileData.preferredName ?? profileData.fullName
+        let user = User(
+            id: profileData.userId ?? profileData.id ?? "",
+            email: "",
+            firstName: name,
+            lastName: nil,
+            avatar: nil,
+            role: nil,
+            tier: nil
+        )
+        return UserProfile(from: user)
     }
     
     // MARK: - Update Profile

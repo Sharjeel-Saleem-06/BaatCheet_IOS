@@ -10,6 +10,7 @@ import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
     @EnvironmentObject private var chatViewModel: ChatViewModel
+    @Environment(\.showDrawer) private var showDrawer
     
     @State private var showLogoutConfirmation = false
     @State private var showDeleteAccountConfirmation = false
@@ -92,6 +93,13 @@ struct SettingsView: View {
         }
         .listStyle(.insetGrouped)
         .navigationTitle("Settings")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: { showDrawer.wrappedValue = true }) {
+                    Image(systemName: "line.3.horizontal")
+                }
+            }
+        }
         .confirmationDialog("Sign Out?", isPresented: $showLogoutConfirmation) {
             Button("Sign Out", role: .destructive) {
                 Task { await authViewModel.logout() }

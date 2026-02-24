@@ -110,7 +110,7 @@ final class ChatRepositoryImpl: ChatRepository {
             throw ChatError.serverError(response.error ?? "Failed to load conversations")
         }
         
-        return response.data?.conversations?.map { $0.toDomain() } ?? []
+        return response.data?.allConversations.map { $0.toDomain() } ?? []
     }
     
     // MARK: - Get Conversation

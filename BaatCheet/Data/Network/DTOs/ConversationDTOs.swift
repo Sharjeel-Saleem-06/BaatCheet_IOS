@@ -15,10 +15,24 @@ struct ConversationsResponseDTO: Decodable {
 }
 
 struct ConversationsDataDTO: Decodable {
+    let items: [ConversationDTO]?
+    let pagination: PaginationDTO?
+    
     let conversations: [ConversationDTO]?
     let total: Int?
     let page: Int?
     let limit: Int?
+    
+    var allConversations: [ConversationDTO] {
+        items ?? conversations ?? []
+    }
+}
+
+struct PaginationDTO: Decodable {
+    let page: Int?
+    let limit: Int?
+    let total: Int?
+    let totalPages: Int?
 }
 
 // MARK: - Single Conversation Response
