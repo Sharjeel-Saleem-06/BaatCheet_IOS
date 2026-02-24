@@ -43,10 +43,7 @@ struct BaatCheetApp: App {
     
     // MARK: - Private Methods
     private func configureAppearance() {
-        let tabBarAppearance = UITabBarAppearance()
-        tabBarAppearance.configureWithOpaqueBackground()
-        UITabBar.appearance().standardAppearance = tabBarAppearance
-        UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
+        // No global UIKit appearance overrides - using SwiftUI native styling
     }
     
     private func handleDeepLink(_ url: URL) {

@@ -25,7 +25,7 @@ final class ProjectRepositoryImpl: ProjectRepository {
             throw ProjectError.serverError(response.error ?? "Failed to load projects")
         }
         
-        return response.data?.projects?.map { $0.toDomain() } ?? []
+        return response.data?.map { $0.toDomain() } ?? []
     }
     
     // MARK: - Get Project
@@ -142,7 +142,7 @@ final class ProjectRepositoryImpl: ProjectRepository {
             return []
         }
         
-        return response.data?.invitations?.map { $0.toDomain() } ?? []
+        return response.data?.map { $0.toDomain() } ?? []
     }
     
     // MARK: - Respond to Invitation

@@ -7,16 +7,11 @@
 
 import Foundation
 
-// MARK: - Projects List Response
+// MARK: - Projects List Response (API returns data as array directly)
 struct ProjectsResponseDTO: Decodable {
     let success: Bool
-    let data: ProjectsDataDTO?
+    let data: [ProjectDTO]?
     let error: String?
-}
-
-struct ProjectsDataDTO: Decodable {
-    let projects: [ProjectDTO]?
-    let total: Int?
 }
 
 // MARK: - Single Project Response
@@ -174,14 +169,10 @@ struct ChangeRoleRequestDTO: Encodable {
     let role: String
 }
 
-// MARK: - Pending Invitations Response
+// MARK: - Pending Invitations Response (API returns data as array directly)
 struct PendingInvitationsResponseDTO: Decodable {
     let success: Bool
-    let data: PendingInvitationsDataDTO?
-}
-
-struct PendingInvitationsDataDTO: Decodable {
-    let invitations: [PendingInvitationDTO]?
+    let data: [PendingInvitationDTO]?
 }
 
 struct PendingInvitationDTO: Decodable {

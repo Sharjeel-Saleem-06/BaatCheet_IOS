@@ -13,6 +13,7 @@ struct ChatView: View {
     @EnvironmentObject private var chatViewModel: ChatViewModel
     @EnvironmentObject private var appState: AppState
     
+    @Environment(\.showDrawer) private var showDrawer
     @State private var showConversations = false
     @State private var showPlusMenu = false
     @State private var showVoiceChat = false
@@ -32,8 +33,8 @@ struct ChatView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button(action: { showConversations = true }) {
-                    Image(systemName: "list.bullet")
+                Button(action: { showDrawer.wrappedValue = true }) {
+                    Image(systemName: "line.3.horizontal")
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -205,15 +206,14 @@ struct ChatView: View {
             
             Divider()
             
-            HStack(alignment: .bottom, spacing: 8) {
-                // + Button
+            HStack(alignment: .center, spacing: 8) {
                 Button(action: { showPlusMenu = true }) {
                     Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 28))
+                        .font(.system(size: 26))
                         .foregroundColor(.bcPrimary)
                 }
+                .frame(width: 36, height: 36)
                 
-                // Text Input
                 TextField("Ask BaatCheet", text: $chatViewModel.inputText, axis: .vertical)
                     .textFieldStyle(.plain)
                     .lineLimit(1...5)
@@ -223,26 +223,27 @@ struct ChatView: View {
                     .background(Color(UIColor.secondarySystemBackground))
                     .cornerRadius(20)
                 
-                // Voice chat or Send
                 if chatViewModel.inputText.trimmed.isEmpty {
                     Button(action: { showVoiceChat = true }) {
                         Image(systemName: "waveform.circle.fill")
-                            .font(.system(size: 28))
+                            .font(.system(size: 26))
                             .foregroundColor(.bcPrimary)
                     }
+                    .frame(width: 36, height: 36)
                 } else {
                     Button(action: {
                         Task { await chatViewModel.sendMessage() }
                     }) {
                         Image(systemName: "arrow.up.circle.fill")
-                            .font(.system(size: 32))
+                            .font(.system(size: 30))
                             .foregroundColor(.green)
                     }
+                    .frame(width: 36, height: 36)
                     .disabled(chatViewModel.isSending)
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
             .background(Color(UIColor.systemBackground))
         }
     }
@@ -407,7 +408,7 @@ struct UploadedFileChip: View {
     }
 }
 
-// MARK: - Message Bubble View
+// MARK: - Message Bubble View (matches Android: no AI circle, app icon for assistant)
 struct MessageBubbleView: View {
     let message: ChatMessage
     let isSpeaking: Bool
@@ -417,56 +418,68 @@ struct MessageBubbleView: View {
     let onRegenerate: () -> Void
     
     var body: some View {
-        HStack(alignment: .top, spacing: 8) {
-            if !message.isUser {
-                Circle()
-                    .fill(Color.bcPrimary)
-                    .frame(width: 32, height: 32)
-                    .overlay(
-                        Text("AI")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.white)
-                    )
+        if message.isUser {
+            // User message: right aligned, blue background
+            HStack {
+                Spacer()
+                VStack(alignment: .trailing, spacing: 4) {
+                    if !message.attachments.isEmpty {
+                        AttachmentsRow(attachments: message.attachments)
+                    }
+                    Text(message.content)
+                        .font(.system(size: 15))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(Color.bcPrimary)
+                        .cornerRadius(18)
+                }
+                .frame(maxWidth: UIScreen.main.bounds.width * 0.8)
             }
-            
-            VStack(alignment: message.isUser ? .trailing : .leading, spacing: 4) {
-                if message.isStreaming {
-                    StreamingIndicator()
-                } else {
-                    if let imageResult = message.imageResult, imageResult.success {
-                        GeneratedImageView(imageResult: imageResult)
+            .padding(.horizontal, 8)
+        } else {
+            // AI message: left aligned, full width, light background
+            HStack(alignment: .top, spacing: 8) {
+                Image("SplashLogo")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 28, height: 28)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                
+                VStack(alignment: .leading, spacing: 6) {
+                    if message.isStreaming {
+                        StreamingIndicator()
+                    } else {
+                        if let imageResult = message.imageResult, imageResult.success {
+                            GeneratedImageView(imageResult: imageResult)
+                        }
+                        
+                        if !message.content.isEmpty {
+                            Text(message.content)
+                                .font(.system(size: 15))
+                                .foregroundColor(.primary)
+                                .textSelection(.enabled)
+                        }
                     }
                     
-                    if !message.content.isEmpty {
-                        Text(message.content)
-                            .font(.system(size: 15))
-                            .foregroundColor(message.isUser ? .white : .primary)
-                            .padding(12)
-                            .background(message.isUser ? Color.bcPrimary : Color(UIColor.secondarySystemBackground))
-                            .cornerRadius(16)
+                    if !message.attachments.isEmpty {
+                        AttachmentsRow(attachments: message.attachments)
                     }
-                }
-                
-                if !message.attachments.isEmpty {
-                    AttachmentsRow(attachments: message.attachments)
-                }
-                
-                if !message.isUser && !message.isStreaming {
-                    HStack(spacing: 16) {
-                        actionButton("speaker.wave.2.fill", action: onSpeak)
-                        actionButton("hand.thumbsup", action: onLike)
-                        actionButton("hand.thumbsdown", action: onDislike)
-                        actionButton("doc.on.doc", action: { UIPasteboard.general.string = message.content })
-                        actionButton("arrow.clockwise", action: onRegenerate)
+                    
+                    if !message.isStreaming && !message.content.isEmpty {
+                        HStack(spacing: 18) {
+                            actionButton("speaker.wave.2.fill", action: onSpeak)
+                            actionButton("hand.thumbsup", action: onLike)
+                            actionButton("hand.thumbsdown", action: onDislike)
+                            actionButton("doc.on.doc", action: { UIPasteboard.general.string = message.content })
+                            actionButton("arrow.clockwise", action: onRegenerate)
+                        }
+                        .padding(.top, 2)
                     }
-                    .padding(.top, 4)
                 }
             }
-            .frame(maxWidth: UIScreen.main.bounds.width * 0.75, alignment: message.isUser ? .trailing : .leading)
-            
-            if message.isUser { Spacer() }
+            .padding(.horizontal, 8)
         }
-        .padding(.horizontal, 12)
     }
     
     private func actionButton(_ icon: String, action: @escaping () -> Void) -> some View {
