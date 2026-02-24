@@ -33,9 +33,8 @@ struct EmailAuthView: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
-                Spacer().frame(height: 60)
+                Spacer().frame(height: 16)
                 
-                // Logo (matching Android: 160x160dp, cornerRadius 32)
                 Image("SplashLogo")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
@@ -177,12 +176,13 @@ struct EmailAuthView: View {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.black)
-                        .frame(width: 48, height: 48)
+                        .frame(width: 40, height: 40)
                         .background(Color.gray.opacity(0.1))
-                        .clipShape(RoundedRectangle(cornerRadius: 24))
+                        .clipShape(Circle())
                 }
             }
         }
+        .contentShape(Rectangle())
         .onTapGesture { focusedField = nil }
         .alert("Error", isPresented: .constant(authViewModel.error != nil)) {
             Button("OK") { authViewModel.clearError() }

@@ -6,25 +6,26 @@
 //
 
 import SwiftUI
+import PhotosUI
+import UniformTypeIdentifiers
 
 struct ChatView: View {
-    // MARK: - Environment
     @EnvironmentObject private var chatViewModel: ChatViewModel
     @EnvironmentObject private var appState: AppState
     
-    // MARK: - State
     @State private var showConversations = false
-    @State private var showModeSelector = false
+    @State private var showPlusMenu = false
+    @State private var showVoiceChat = false
     @State private var showShareSheet = false
+    @State private var showImagePicker = false
+    @State private var showCamera = false
+    @State private var showFilePicker = false
+    @State private var selectedPhotoItems: [PhotosPickerItem] = []
     @FocusState private var isInputFocused: Bool
     
-    // MARK: - Body
     var body: some View {
         VStack(spacing: 0) {
-            // Messages List
             messagesView
-            
-            // Input Area
             inputArea
         }
         .navigationTitle(chatViewModel.currentConversationId != nil ? "Chat" : "New Chat")
@@ -35,17 +36,15 @@ struct ChatView: View {
                     Image(systemName: "list.bullet")
                 }
             }
-            
             ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: BCSpacing.sm) {
+                HStack(spacing: 12) {
                     if chatViewModel.currentConversationId != nil {
                         Button(action: { chatViewModel.createShareLink() }) {
                             Image(systemName: "square.and.arrow.up")
                         }
                     }
-                    
                     Button(action: { chatViewModel.startNewChat() }) {
-                        Image(systemName: "plus")
+                        Image(systemName: "square.and.pencil")
                     }
                 }
             }
@@ -53,30 +52,58 @@ struct ChatView: View {
         .sheet(isPresented: $showConversations) {
             ConversationsView()
         }
+        .sheet(isPresented: $showPlusMenu) {
+            PlusMenuSheet(
+                onCameraClick: {
+                    showPlusMenu = false
+                    showCamera = true
+                },
+                onPhotosClick: {
+                    showPlusMenu = false
+                    showImagePicker = true
+                },
+                onFilesClick: {
+                    showPlusMenu = false
+                    showFilePicker = true
+                },
+                onModeSelect: { mode in
+                    chatViewModel.selectedMode = mode
+                    showPlusMenu = false
+                }
+            )
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
+        }
+        .fullScreenCover(isPresented: $showVoiceChat) {
+            VoiceChatView()
+        }
+        .photosPicker(isPresented: $showImagePicker, selection: $selectedPhotoItems, maxSelectionCount: 3, matching: .images)
+        .fileImporter(isPresented: $showFilePicker, allowedContentTypes: [.pdf, .plainText, .json, .xml, .commaSeparatedText], allowsMultipleSelection: true) { result in
+            handleFileImport(result)
+        }
         .sheet(isPresented: $showShareSheet) {
             if let url = chatViewModel.shareUrl {
                 ShareSheet(items: [URL(string: url)!])
             }
         }
         .onChange(of: chatViewModel.shareUrl) { _, newValue in
-            if newValue != nil {
-                showShareSheet = true
-            }
+            if newValue != nil { showShareSheet = true }
+        }
+        .onChange(of: selectedPhotoItems) { _, items in
+            handlePhotoSelection(items)
         }
         .alert("Error", isPresented: .constant(chatViewModel.error != nil)) {
-            Button("OK") {
-                chatViewModel.clearError()
-            }
+            Button("OK") { chatViewModel.clearError() }
         } message: {
             Text(chatViewModel.error ?? "")
         }
     }
     
-    // MARK: - Messages View
+    // MARK: - Messages
     private var messagesView: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(spacing: BCSpacing.md) {
+                LazyVStack(spacing: 12) {
                     if chatViewModel.messages.isEmpty {
                         emptyStateView
                     } else {
@@ -84,7 +111,7 @@ struct ChatView: View {
                             MessageBubbleView(
                                 message: message,
                                 isSpeaking: chatViewModel.speakingMessageId == message.id,
-                                onSpeak: { /* Handle speak */ },
+                                onSpeak: {},
                                 onLike: { chatViewModel.submitFeedback(messageId: message.id, isLike: true) },
                                 onDislike: { chatViewModel.submitFeedback(messageId: message.id, isLike: false) },
                                 onRegenerate: { chatViewModel.regenerateResponse() }
@@ -93,14 +120,14 @@ struct ChatView: View {
                         }
                     }
                 }
-                .padding(.vertical, BCSpacing.md)
+                .padding(.vertical, 12)
             }
             .scrollDismissesKeyboard(.interactively)
+            .contentShape(Rectangle())
+            .onTapGesture { isInputFocused = false }
             .onChange(of: chatViewModel.messages.count) { _, _ in
                 if let lastMessage = chatViewModel.messages.last {
-                    withAnimation {
-                        proxy.scrollTo(lastMessage.id, anchor: .bottom)
-                    }
+                    withAnimation { proxy.scrollTo(lastMessage.id, anchor: .bottom) }
                 }
             }
         }
@@ -108,21 +135,21 @@ struct ChatView: View {
     
     // MARK: - Empty State
     private var emptyStateView: some View {
-        VStack(spacing: BCSpacing.xl) {
-            Spacer()
+        VStack(spacing: 24) {
+            Spacer().frame(height: 60)
             
-            Image("login_image")
+            Image("SplashLogo")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 150, height: 70)
+                .frame(width: 100, height: 100)
+                .clipShape(RoundedRectangle(cornerRadius: 20))
                 .opacity(0.8)
             
             Text("How can I help you today?")
-                .font(.bcTitle2)
+                .font(.system(size: 22, weight: .semibold))
                 .foregroundColor(.primary)
             
-            // Suggestions
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: BCSpacing.sm) {
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                 ForEach(chatViewModel.suggestions.prefix(4), id: \.self) { suggestion in
                     SuggestionChip(text: suggestion) {
                         chatViewModel.useSuggestion(suggestion)
@@ -138,61 +165,245 @@ struct ChatView: View {
     // MARK: - Input Area
     private var inputArea: some View {
         VStack(spacing: 0) {
-            // AI Mode Selector
-            if !chatViewModel.aiModes.isEmpty {
+            // Selected mode chip
+            if let mode = chatViewModel.selectedMode, !mode.isEmpty {
+                HStack {
+                    Text(modeName(for: mode))
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.bcPrimary)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.bcPrimary.opacity(0.1))
+                        .cornerRadius(16)
+                    
+                    Button(action: { chatViewModel.selectedMode = nil }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(.gray)
+                    }
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+            }
+            
+            // Uploaded files preview
+            if !chatViewModel.uploadedFiles.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: BCSpacing.xs) {
-                        ForEach(chatViewModel.aiModes.prefix(6)) { mode in
-                            AIModeChip(
-                                mode: mode,
-                                isSelected: chatViewModel.selectedMode == mode.id
-                            ) {
-                                chatViewModel.selectAIMode(mode)
+                    HStack(spacing: 8) {
+                        ForEach(chatViewModel.uploadedFiles) { file in
+                            UploadedFileChip(file: file) {
+                                chatViewModel.uploadedFiles.removeAll { $0.id == file.id }
                             }
                         }
                     }
-                    .padding(.horizontal, BCSpacing.md)
-                    .padding(.vertical, BCSpacing.xs)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
                 }
             }
             
             Divider()
             
-            // Input Field
-            HStack(alignment: .bottom, spacing: BCSpacing.sm) {
-                // Attach Button
-                Button(action: { /* Show attachment options */ }) {
+            HStack(alignment: .bottom, spacing: 8) {
+                // + Button
+                Button(action: { showPlusMenu = true }) {
                     Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 24))
+                        .font(.system(size: 28))
                         .foregroundColor(.bcPrimary)
                 }
                 
                 // Text Input
-                TextField("Message", text: $chatViewModel.inputText, axis: .vertical)
+                TextField("Ask BaatCheet", text: $chatViewModel.inputText, axis: .vertical)
                     .textFieldStyle(.plain)
                     .lineLimit(1...5)
                     .focused($isInputFocused)
-                    .padding(.horizontal, BCSpacing.sm)
-                    .padding(.vertical, BCSpacing.xs)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
                     .background(Color(UIColor.secondarySystemBackground))
                     .cornerRadius(20)
                 
-                // Send Button
-                Button(action: {
-                    Task {
-                        await chatViewModel.sendMessage()
+                // Voice chat or Send
+                if chatViewModel.inputText.trimmed.isEmpty {
+                    Button(action: { showVoiceChat = true }) {
+                        Image(systemName: "waveform.circle.fill")
+                            .font(.system(size: 28))
+                            .foregroundColor(.bcPrimary)
                     }
-                }) {
-                    Image(systemName: chatViewModel.isSending ? "stop.circle.fill" : "arrow.up.circle.fill")
-                        .font(.system(size: 32))
-                        .foregroundColor(chatViewModel.inputText.isEmpty ? .gray : .bcPrimary)
+                } else {
+                    Button(action: {
+                        Task { await chatViewModel.sendMessage() }
+                    }) {
+                        Image(systemName: "arrow.up.circle.fill")
+                            .font(.system(size: 32))
+                            .foregroundColor(.green)
+                    }
+                    .disabled(chatViewModel.isSending)
                 }
-                .disabled(chatViewModel.inputText.isEmpty && !chatViewModel.isSending)
             }
-            .padding(.horizontal, BCSpacing.md)
-            .padding(.vertical, BCSpacing.sm)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
             .background(Color(UIColor.systemBackground))
         }
+    }
+    
+    private func modeName(for id: String) -> String {
+        switch id {
+        case "image-generation": return "Create Image"
+        case "research": return "Deep Research"
+        case "web-search": return "Web Search"
+        case "tutor": return "Study & Learn"
+        case "code": return "Code"
+        default: return id.capitalized
+        }
+    }
+    
+    private func handlePhotoSelection(_ items: [PhotosPickerItem]) {
+        for item in items {
+            Task {
+                if let data = try? await item.loadTransferable(type: Data.self) {
+                    let filename = "photo_\(UUID().uuidString.prefix(8)).jpg"
+                    let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+                    try? data.write(to: tempURL)
+                    let file = UploadedFileState(
+                        id: UUID().uuidString,
+                        url: tempURL,
+                        filename: filename,
+                        mimeType: "image/jpeg",
+                        status: .ready
+                    )
+                    await MainActor.run {
+                        chatViewModel.uploadedFiles.append(file)
+                    }
+                }
+            }
+        }
+        selectedPhotoItems = []
+    }
+    
+    private func handleFileImport(_ result: Result<[URL], Error>) {
+        switch result {
+        case .success(let urls):
+            for url in urls {
+                let file = UploadedFileState(
+                    id: UUID().uuidString,
+                    url: url,
+                    filename: url.lastPathComponent,
+                    mimeType: UTType(filenameExtension: url.pathExtension)?.preferredMIMEType ?? "application/octet-stream",
+                    status: .ready
+                )
+                chatViewModel.uploadedFiles.append(file)
+            }
+        case .failure:
+            break
+        }
+    }
+}
+
+// MARK: - Plus Menu Bottom Sheet (matches Android PlusMenuBottomSheet)
+struct PlusMenuSheet: View {
+    let onCameraClick: () -> Void
+    let onPhotosClick: () -> Void
+    let onFilesClick: () -> Void
+    let onModeSelect: (String) -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Media row
+            HStack(spacing: 24) {
+                mediaButton(icon: "camera.fill", label: "Camera", action: onCameraClick)
+                mediaButton(icon: "photo.fill", label: "Photos", action: onPhotosClick)
+                mediaButton(icon: "doc.fill", label: "Files", action: onFilesClick)
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 20)
+            .padding(.bottom, 16)
+            
+            Divider()
+                .padding(.horizontal, 16)
+            
+            // Mode options
+            VStack(spacing: 0) {
+                modeRow(icon: "sparkles", label: "Create image", mode: "image-generation")
+                modeRow(icon: "brain.head.profile", label: "Thinking", mode: "research")
+                modeRow(icon: "magnifyingglass", label: "Deep research", mode: "research")
+                modeRow(icon: "globe", label: "Web search", mode: "web-search")
+                modeRow(icon: "book.fill", label: "Study and learn", mode: "tutor")
+                modeRow(icon: "doc.text.fill", label: "Add files", mode: "files")
+                modeRow(icon: "chevron.left.forwardslash.chevron.right", label: "Code", mode: "code")
+            }
+            .padding(.top, 8)
+            
+            Spacer()
+        }
+        .background(Color(UIColor.systemBackground))
+    }
+    
+    private func mediaButton(icon: String, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 22))
+                    .foregroundColor(.primary)
+                    .frame(width: 52, height: 52)
+                    .background(Color(UIColor.secondarySystemBackground))
+                    .clipShape(Circle())
+                
+                Text(label)
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+    
+    private func modeRow(icon: String, label: String, mode: String) -> some View {
+        Button(action: { onModeSelect(mode) }) {
+            HStack(spacing: 14) {
+                Image(systemName: icon)
+                    .font(.system(size: 18))
+                    .foregroundColor(.primary)
+                    .frame(width: 28)
+                
+                Text(label)
+                    .font(.system(size: 16))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+        }
+    }
+}
+
+// MARK: - Uploaded File Chip
+struct UploadedFileChip: View {
+    let file: UploadedFileState
+    let onRemove: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: file.mimeType.starts(with: "image") ? "photo" : "doc.fill")
+                .font(.system(size: 12))
+                .foregroundColor(.bcPrimary)
+            
+            Text(file.filename)
+                .font(.system(size: 12))
+                .foregroundColor(.primary)
+                .lineLimit(1)
+            
+            Button(action: onRemove) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(.gray)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(Color(UIColor.secondarySystemBackground))
+        .cornerRadius(16)
     }
 }
 
@@ -206,90 +417,64 @@ struct MessageBubbleView: View {
     let onRegenerate: () -> Void
     
     var body: some View {
-        HStack(alignment: .top, spacing: BCSpacing.sm) {
+        HStack(alignment: .top, spacing: 8) {
             if !message.isUser {
-                // AI Avatar
                 Circle()
                     .fill(Color.bcPrimary)
                     .frame(width: 32, height: 32)
                     .overlay(
                         Text("AI")
-                            .font(.bcCaptionMedium)
+                            .font(.system(size: 12, weight: .bold))
                             .foregroundColor(.white)
                     )
             }
             
-            VStack(alignment: message.isUser ? .trailing : .leading, spacing: BCSpacing.xxs) {
-                // Message Content
+            VStack(alignment: message.isUser ? .trailing : .leading, spacing: 4) {
                 if message.isStreaming {
                     StreamingIndicator()
                 } else {
-                    // Image Result
                     if let imageResult = message.imageResult, imageResult.success {
                         GeneratedImageView(imageResult: imageResult)
                     }
                     
-                    // Text Content
                     if !message.content.isEmpty {
                         Text(message.content)
-                            .font(.bcBody)
+                            .font(.system(size: 15))
                             .foregroundColor(message.isUser ? .white : .primary)
-                            .padding(BCSpacing.sm)
+                            .padding(12)
                             .background(message.isUser ? Color.bcPrimary : Color(UIColor.secondarySystemBackground))
-                            .cornerRadius(BCCornerRadius.lg)
+                            .cornerRadius(16)
                     }
                 }
                 
-                // Attachments
                 if !message.attachments.isEmpty {
                     AttachmentsRow(attachments: message.attachments)
                 }
                 
-                // Action Buttons (for AI messages)
                 if !message.isUser && !message.isStreaming {
-                    HStack(spacing: BCSpacing.md) {
-                        Button(action: onSpeak) {
-                            Image(systemName: isSpeaking ? "speaker.slash.fill" : "speaker.wave.2.fill")
-                                .font(.system(size: 14))
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Button(action: onLike) {
-                            Image(systemName: "hand.thumbsup")
-                                .font(.system(size: 14))
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Button(action: onDislike) {
-                            Image(systemName: "hand.thumbsdown")
-                                .font(.system(size: 14))
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Button(action: {
-                            UIPasteboard.general.string = message.content
-                        }) {
-                            Image(systemName: "doc.on.doc")
-                                .font(.system(size: 14))
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Button(action: onRegenerate) {
-                            Image(systemName: "arrow.clockwise")
-                                .font(.system(size: 14))
-                                .foregroundColor(.secondary)
-                        }
+                    HStack(spacing: 16) {
+                        actionButton("speaker.wave.2.fill", action: onSpeak)
+                        actionButton("hand.thumbsup", action: onLike)
+                        actionButton("hand.thumbsdown", action: onDislike)
+                        actionButton("doc.on.doc", action: { UIPasteboard.general.string = message.content })
+                        actionButton("arrow.clockwise", action: onRegenerate)
                     }
-                    .padding(.top, BCSpacing.xxs)
+                    .padding(.top, 4)
                 }
             }
             .frame(maxWidth: UIScreen.main.bounds.width * 0.75, alignment: message.isUser ? .trailing : .leading)
             
-            if message.isUser {
-                Spacer()
-            }
+            if message.isUser { Spacer() }
         }
-        .padding(.horizontal, BCSpacing.md)
+        .padding(.horizontal, 12)
+    }
+    
+    private func actionButton(_ icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 14))
+                .foregroundColor(.secondary)
+        }
     }
 }
 
@@ -299,25 +484,21 @@ struct StreamingIndicator: View {
     
     var body: some View {
         HStack(spacing: 4) {
-            ForEach(0..<3) { index in
+            ForEach(0..<3, id: \.self) { index in
                 Circle()
                     .fill(Color.gray)
                     .frame(width: 8, height: 8)
                     .opacity(animating ? 1 : 0.3)
                     .animation(
-                        .easeInOut(duration: 0.6)
-                        .repeatForever()
-                        .delay(Double(index) * 0.2),
+                        .easeInOut(duration: 0.6).repeatForever().delay(Double(index) * 0.2),
                         value: animating
                     )
             }
         }
-        .padding(BCSpacing.sm)
+        .padding(12)
         .background(Color(UIColor.secondarySystemBackground))
-        .cornerRadius(BCCornerRadius.lg)
-        .onAppear {
-            animating = true
-        }
+        .cornerRadius(16)
+        .onAppear { animating = true }
     }
 }
 
@@ -326,19 +507,18 @@ struct GeneratedImageView: View {
     let imageResult: ImageResult
     
     var body: some View {
-        VStack(alignment: .leading, spacing: BCSpacing.xs) {
+        VStack(alignment: .leading, spacing: 6) {
             if let urlString = imageResult.imageUrl, let url = URL(string: urlString) {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .empty:
-                        ProgressView()
-                            .frame(width: 200, height: 200)
+                        ProgressView().frame(width: 200, height: 200)
                     case .success(let image):
                         image
                             .resizable()
                             .aspectRatio(contentMode: .fit)
                             .frame(maxWidth: 250)
-                            .cornerRadius(BCCornerRadius.md)
+                            .cornerRadius(12)
                     case .failure:
                         Image(systemName: "photo")
                             .font(.system(size: 50))
@@ -352,7 +532,7 @@ struct GeneratedImageView: View {
             
             if let enhancedPrompt = imageResult.enhancedPrompt {
                 Text("Enhanced: \(enhancedPrompt)")
-                    .font(.bcCaption)
+                    .font(.system(size: 12))
                     .foregroundColor(.secondary)
                     .lineLimit(2)
             }
@@ -366,7 +546,7 @@ struct AttachmentsRow: View {
     
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: BCSpacing.xs) {
+            HStack(spacing: 8) {
                 ForEach(attachments) { attachment in
                     AttachmentThumbnail(attachment: attachment)
                 }
@@ -383,16 +563,14 @@ struct AttachmentThumbnail: View {
             if attachment.isImage, let urlString = attachment.thumbnailUrl ?? attachment.url,
                let url = URL(string: urlString) {
                 AsyncImage(url: url) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
+                    image.resizable().aspectRatio(contentMode: .fill)
                 } placeholder: {
                     ProgressView()
                 }
                 .frame(width: 60, height: 60)
-                .cornerRadius(BCCornerRadius.sm)
+                .cornerRadius(8)
             } else {
-                RoundedRectangle(cornerRadius: BCCornerRadius.sm)
+                RoundedRectangle(cornerRadius: 8)
                     .fill(Color(UIColor.secondarySystemBackground))
                     .frame(width: 60, height: 60)
                     .overlay(
@@ -402,7 +580,7 @@ struct AttachmentThumbnail: View {
             }
             
             Text(attachment.filename)
-                .font(.bcCaption)
+                .font(.system(size: 10))
                 .lineLimit(1)
                 .frame(width: 60)
         }
@@ -417,12 +595,12 @@ struct SuggestionChip: View {
     var body: some View {
         Button(action: action) {
             Text(text)
-                .font(.bcLabel)
+                .font(.system(size: 13))
                 .foregroundColor(.primary)
-                .padding(.horizontal, BCSpacing.sm)
-                .padding(.vertical, BCSpacing.xs)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
                 .background(Color(UIColor.secondarySystemBackground))
-                .cornerRadius(BCCornerRadius.md)
+                .cornerRadius(12)
         }
     }
 }
@@ -435,17 +613,17 @@ struct AIModeChip: View {
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: BCSpacing.xxs) {
+            HStack(spacing: 4) {
                 Text(mode.icon)
                     .font(.system(size: 14))
                 Text(mode.displayName)
-                    .font(.bcLabelSmall)
+                    .font(.system(size: 13, weight: .medium))
             }
             .foregroundColor(isSelected ? .white : .primary)
-            .padding(.horizontal, BCSpacing.sm)
-            .padding(.vertical, BCSpacing.xs)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
             .background(isSelected ? Color.bcPrimary : Color(UIColor.secondarySystemBackground))
-            .cornerRadius(BCCornerRadius.md)
+            .cornerRadius(16)
         }
     }
 }
@@ -457,7 +635,6 @@ struct ShareSheet: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIActivityViewController {
         UIActivityViewController(activityItems: items, applicationActivities: nil)
     }
-    
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 

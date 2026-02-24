@@ -8,69 +8,58 @@
 import SwiftUI
 
 struct SettingsView: View {
-    // MARK: - Environment
     @EnvironmentObject private var authViewModel: AuthViewModel
     @EnvironmentObject private var chatViewModel: ChatViewModel
     
-    // MARK: - State
     @State private var showLogoutConfirmation = false
     @State private var showDeleteAccountConfirmation = false
+    @State private var showClearHistoryConfirmation = false
+    @State private var showChangePassword = false
+    @State private var showCustomInstructions = false
     
-    // MARK: - Body
     var body: some View {
         List {
-            // Profile Section
+            // Profile
             Section {
                 profileHeader
             }
             
-            // Account Section
-            Section("Account") {
-                NavigationLink(destination: EditProfileView()) {
-                    Label("Edit Profile", systemImage: "person.circle")
-                }
-                
-                NavigationLink(destination: MemoryView()) {
-                    Label("Memory & Learning", systemImage: "brain")
-                }
-                
-                NavigationLink(destination: AnalyticsView()) {
-                    Label("Analytics", systemImage: "chart.bar")
-                }
-            }
-            
-            // Preferences Section
-            Section("Preferences") {
-                NavigationLink(destination: AppearanceSettingsView()) {
-                    Label("Appearance", systemImage: "paintbrush")
-                }
-                
-                NavigationLink(destination: NotificationSettingsView()) {
-                    Label("Notifications", systemImage: "bell")
-                }
-                
-                NavigationLink(destination: VoiceSettingsView()) {
-                    Label("Voice & Audio", systemImage: "speaker.wave.2")
-                }
-            }
-            
-            // Usage Section
+            // Usage
             Section("Usage") {
                 usageRow
             }
             
-            // About Section
-            Section("About") {
-                NavigationLink(destination: PrivacyPolicyView()) {
+            // Personalization
+            Section("Personalization") {
+                Button(action: { showCustomInstructions = true }) {
+                    Label("Custom Instructions", systemImage: "text.bubble")
+                        .foregroundColor(.primary)
+                }
+            }
+            
+            // Data Management
+            Section("Data Management") {
+                Button(action: { showClearHistoryConfirmation = true }) {
+                    Label("Clear Chat History", systemImage: "trash")
+                        .foregroundColor(.primary)
+                }
+            }
+            
+            // About & Legal
+            Section("About & Legal") {
+                Link(destination: URL(string: "https://baatcheet.app/privacy")!) {
                     Label("Privacy Policy", systemImage: "hand.raised")
+                        .foregroundColor(.primary)
                 }
                 
-                NavigationLink(destination: TermsOfServiceView()) {
+                Link(destination: URL(string: "https://baatcheet.app/terms")!) {
                     Label("Terms of Service", systemImage: "doc.text")
+                        .foregroundColor(.primary)
                 }
                 
-                NavigationLink(destination: HelpView()) {
-                    Label("Help & Support", systemImage: "questionmark.circle")
+                Link(destination: URL(string: "mailto:support@baatcheet.app")!) {
+                    Label("Contact Support", systemImage: "envelope")
+                        .foregroundColor(.primary)
                 }
                 
                 HStack {
@@ -81,8 +70,13 @@ struct SettingsView: View {
                 }
             }
             
-            // Sign Out Section
-            Section {
+            // Account & Security
+            Section("Account & Security") {
+                Button(action: { showChangePassword = true }) {
+                    Label("Change Password", systemImage: "lock.rotation")
+                        .foregroundColor(.primary)
+                }
+                
                 Button(role: .destructive) {
                     showLogoutConfirmation = true
                 } label: {
@@ -100,192 +94,231 @@ struct SettingsView: View {
         .navigationTitle("Settings")
         .confirmationDialog("Sign Out?", isPresented: $showLogoutConfirmation) {
             Button("Sign Out", role: .destructive) {
-                Task {
-                    await authViewModel.logout()
-                }
+                Task { await authViewModel.logout() }
             }
             Button("Cancel", role: .cancel) {}
         }
-        .confirmationDialog(
-            "Delete Account?",
-            isPresented: $showDeleteAccountConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("Delete Account", role: .destructive) {
-                // Handle delete account
-            }
+        .confirmationDialog("Delete Account?", isPresented: $showDeleteAccountConfirmation, titleVisibility: .visible) {
+            Button("Delete Account", role: .destructive) {}
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("This will permanently delete your account and all data. This action cannot be undone.")
+        }
+        .confirmationDialog("Clear Chat History?", isPresented: $showClearHistoryConfirmation) {
+            Button("Clear All", role: .destructive) {
+                // chatViewModel.clearHistory()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will delete all your conversation history. This cannot be undone.")
+        }
+        .sheet(isPresented: $showChangePassword) {
+            ChangePasswordSheet()
+        }
+        .sheet(isPresented: $showCustomInstructions) {
+            CustomInstructionsSheet()
         }
     }
     
     // MARK: - Profile Header
     private var profileHeader: some View {
-        HStack(spacing: BCSpacing.md) {
-            // Avatar
+        HStack(spacing: 14) {
             if let avatarUrl = chatViewModel.userProfile?.avatar,
                let url = URL(string: avatarUrl) {
                 AsyncImage(url: url) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
+                    image.resizable().aspectRatio(contentMode: .fill)
                 } placeholder: {
                     avatarPlaceholder
                 }
-                .frame(width: 60, height: 60)
+                .frame(width: 56, height: 56)
                 .clipShape(Circle())
             } else {
                 avatarPlaceholder
             }
             
-            VStack(alignment: .leading, spacing: BCSpacing.xxs) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(chatViewModel.userProfile?.displayName ?? "User")
-                    .font(.bcTitle3)
+                    .font(.system(size: 18, weight: .semibold))
                 
                 Text(chatViewModel.userProfile?.email ?? "")
-                    .font(.bcBody)
+                    .font(.system(size: 14))
                     .foregroundColor(.secondary)
+                
+                Text("Free tier")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.bcPrimary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(Color.bcPrimary.opacity(0.1))
+                    .cornerRadius(8)
             }
             
             Spacer()
         }
-        .padding(.vertical, BCSpacing.xs)
+        .padding(.vertical, 4)
     }
     
     private var avatarPlaceholder: some View {
         Circle()
             .fill(Color.bcPrimary.opacity(0.2))
-            .frame(width: 60, height: 60)
+            .frame(width: 56, height: 56)
             .overlay(
                 Text(chatViewModel.userProfile?.initials ?? "?")
-                    .font(.bcTitle2)
+                    .font(.system(size: 22, weight: .semibold))
                     .foregroundColor(.bcPrimary)
             )
     }
     
-    // MARK: - Usage Row
+    // MARK: - Usage
     private var usageRow: some View {
-        VStack(alignment: .leading, spacing: BCSpacing.sm) {
-            HStack {
-                Text("This Month")
-                    .font(.bcBodyMedium)
-                Spacer()
-                Text(chatViewModel.usageInfo.quotaDescription)
-                    .font(.bcCaption)
-                    .foregroundColor(.secondary)
-            }
-            
-            // Messages Progress
-            VStack(alignment: .leading, spacing: BCSpacing.xxs) {
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Text("Messages")
-                        .font(.bcCaption)
+                        .font(.system(size: 13))
                     Spacer()
                     Text("\(chatViewModel.usageInfo.messagesUsed)/\(chatViewModel.usageInfo.messagesLimit)")
-                        .font(.bcCaption)
+                        .font(.system(size: 13))
                         .foregroundColor(.secondary)
                 }
-                
                 ProgressView(value: chatViewModel.usageInfo.messageUsagePercentage)
                     .tint(.bcPrimary)
             }
             
-            // Images Progress
-            VStack(alignment: .leading, spacing: BCSpacing.xxs) {
+            VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Text("Images")
-                        .font(.bcCaption)
+                    Text("Images/Day")
+                        .font(.system(size: 13))
                     Spacer()
                     Text("\(chatViewModel.usageInfo.imagesUsed)/\(chatViewModel.usageInfo.imagesLimit)")
-                        .font(.bcCaption)
+                        .font(.system(size: 13))
                         .foregroundColor(.secondary)
                 }
-                
                 ProgressView(value: chatViewModel.usageInfo.imageUsagePercentage)
-                    .tint(.bcSecondary)
-            }
-            
-            if chatViewModel.usageInfo.isFreeTier {
-                Button(action: { /* Show upgrade */ }) {
-                    HStack {
-                        Image(systemName: "star.fill")
-                        Text("Upgrade to Pro")
-                    }
-                    .font(.bcButtonSmall)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, BCSpacing.xs)
-                    .background(Color.bcPrimary)
-                    .cornerRadius(BCCornerRadius.sm)
-                }
-                .padding(.top, BCSpacing.xs)
+                    .tint(.orange)
             }
         }
     }
 }
 
-// MARK: - Placeholder Views
-struct EditProfileView: View {
+// MARK: - Change Password Sheet
+struct ChangePasswordSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var authViewModel: AuthViewModel
+    
+    @State private var currentPassword = ""
+    @State private var newPassword = ""
+    @State private var confirmPassword = ""
+    @State private var isLoading = false
+    @State private var showSuccess = false
+    @State private var errorMessage: String?
+    
     var body: some View {
-        Text("Edit Profile")
-            .navigationTitle("Edit Profile")
+        NavigationStack {
+            Form {
+                Section {
+                    SecureField("Current Password", text: $currentPassword)
+                    SecureField("New Password", text: $newPassword)
+                    SecureField("Confirm New Password", text: $confirmPassword)
+                }
+                
+                if let error = errorMessage {
+                    Section {
+                        Text(error)
+                            .foregroundColor(.red)
+                            .font(.system(size: 14))
+                    }
+                }
+            }
+            .navigationTitle("Change Password")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Save") {
+                        guard newPassword == confirmPassword else {
+                            errorMessage = "Passwords do not match"
+                            return
+                        }
+                        guard newPassword.count >= 8 else {
+                            errorMessage = "Password must be at least 8 characters"
+                            return
+                        }
+                        Task {
+                            isLoading = true
+                            do {
+                                try await authViewModel.authRepository.changePassword(
+                                    currentPassword: currentPassword,
+                                    newPassword: newPassword
+                                )
+                                showSuccess = true
+                            } catch {
+                                errorMessage = error.localizedDescription
+                            }
+                            isLoading = false
+                        }
+                    }
+                    .disabled(currentPassword.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty || isLoading)
+                }
+            }
+            .alert("Success", isPresented: $showSuccess) {
+                Button("OK") { dismiss() }
+            } message: {
+                Text("Password changed successfully.")
+            }
+        }
     }
 }
 
-struct MemoryView: View {
+// MARK: - Custom Instructions Sheet
+struct CustomInstructionsSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var instructions = ""
+    @State private var isLoading = false
+    
     var body: some View {
-        Text("Memory & Learning")
-            .navigationTitle("Memory")
-    }
-}
-
-struct AnalyticsView: View {
-    var body: some View {
-        Text("Analytics")
-            .navigationTitle("Analytics")
-    }
-}
-
-struct AppearanceSettingsView: View {
-    var body: some View {
-        Text("Appearance Settings")
-            .navigationTitle("Appearance")
-    }
-}
-
-struct NotificationSettingsView: View {
-    var body: some View {
-        Text("Notification Settings")
-            .navigationTitle("Notifications")
-    }
-}
-
-struct VoiceSettingsView: View {
-    var body: some View {
-        Text("Voice & Audio Settings")
-            .navigationTitle("Voice & Audio")
-    }
-}
-
-struct PrivacyPolicyView: View {
-    var body: some View {
-        Text("Privacy Policy")
-            .navigationTitle("Privacy Policy")
-    }
-}
-
-struct TermsOfServiceView: View {
-    var body: some View {
-        Text("Terms of Service")
-            .navigationTitle("Terms of Service")
-    }
-}
-
-struct HelpView: View {
-    var body: some View {
-        Text("Help & Support")
-            .navigationTitle("Help")
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("What would you like BaatCheet to know about you to provide better responses?")
+                    .font(.system(size: 15))
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal)
+                
+                TextEditor(text: $instructions)
+                    .font(.system(size: 15))
+                    .padding(12)
+                    .frame(minHeight: 200)
+                    .background(Color(UIColor.secondarySystemBackground))
+                    .cornerRadius(12)
+                    .padding(.horizontal)
+                
+                HStack {
+                    Spacer()
+                    Text("\(instructions.count)/1500")
+                        .font(.system(size: 13))
+                        .foregroundColor(instructions.count > 1500 ? .red : .secondary)
+                }
+                .padding(.horizontal)
+                
+                Spacer()
+            }
+            .padding(.top)
+            .navigationTitle("Custom Instructions")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Save") {
+                        dismiss()
+                    }
+                    .disabled(instructions.count > 1500 || isLoading)
+                }
+            }
+        }
     }
 }
 

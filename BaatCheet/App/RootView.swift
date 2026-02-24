@@ -60,6 +60,7 @@ struct LoginFlowView: View {
             case .emailAuth(let isSignIn):
                 NavigationStack {
                     EmailAuthView(mode: isSignIn ? .signin : .signup)
+                        .navigationBarBackButtonHidden(true)
                 }
                 .environmentObject(DependencyContainer.shared.authViewModel)
             }
