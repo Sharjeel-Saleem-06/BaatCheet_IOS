@@ -74,6 +74,7 @@ struct MainDrawerView: View {
     @EnvironmentObject private var chatViewModel: ChatViewModel
     @State private var showDrawer = false
     @State private var showAllChats = false
+    @State private var showCollaborations = false
     
     var body: some View {
         ZStack(alignment: .leading) {
@@ -88,7 +89,7 @@ struct MainDrawerView: View {
                         withAnimation(.easeOut(duration: 0.2)) { showDrawer = false }
                     }
                 
-                ChatDrawerContent(showDrawer: $showDrawer, showAllChats: $showAllChats)
+                ChatDrawerContent(showDrawer: $showDrawer, showAllChats: $showAllChats, showCollaborations: $showCollaborations)
                     .frame(width: 300)
                     .background(Color(UIColor.systemBackground))
                     .transition(.move(edge: .leading))
@@ -99,6 +100,9 @@ struct MainDrawerView: View {
         .sheet(isPresented: $showAllChats) {
             ConversationsView()
                 .environmentObject(chatViewModel)
+        }
+        .sheet(isPresented: $showCollaborations) {
+            CollaborationsSheet()
         }
     }
     
@@ -173,12 +177,16 @@ struct ProjectDetailInlineView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                HStack(spacing: 8) {
+                HStack(alignment: .center, spacing: 8) {
                     Button(action: {
                         appState.selectedProjectId = nil
                         appState.selectedTab = .chat
                     }) {
                         Image(systemName: "arrow.left")
+                            .font(.system(size: 16, weight: .medium))
+                            .frame(width: 32, height: 32)
+                            .background(Color(UIColor.secondarySystemBackground))
+                            .clipShape(Circle())
                     }
                     
                     if let project = viewModel.selectedProject {
@@ -950,20 +958,23 @@ struct ProjectSettingsSheet: View {
                     
                     // Save button
                     Button(action: {
-                        isSaving = true
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            isSaving = false
-                            dismiss()
-                        }
+                        saveProject()
                     }) {
-                        Text("Save changes")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(Color.bcPrimary)
-                            .cornerRadius(10)
+                        if isSaving {
+                            ProgressView()
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                        } else {
+                            Text("Save changes")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(Color.bcPrimary)
+                                .cornerRadius(10)
+                        }
                     }
+                    .disabled(isSaving)
                     
                     // Delete project
                     if project.canDelete {
@@ -991,6 +1002,10 @@ struct ProjectSettingsSheet: View {
                     }
                 }
             }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+            }
         }
         .onAppear {
             projectName = project.name
@@ -1010,12 +1025,160 @@ struct ProjectSettingsSheet: View {
             InviteCollaboratorSheet(viewModel: viewModel)
         }
     }
+    
+    private func saveProject() {
+        isSaving = true
+        Task {
+            do {
+                let updated = try await viewModel.projectRepository.updateProject(
+                    project.id,
+                    name: projectName.trimmed.isEmpty ? nil : projectName.trimmed,
+                    description: nil,
+                    color: nil,
+                    emoji: projectEmoji,
+                    instructions: instructions.trimmed.isEmpty ? nil : instructions.trimmed,
+                    customInstructions: nil
+                )
+                viewModel.selectedProject = updated
+                if let idx = viewModel.projects.firstIndex(where: { $0.id == project.id }) {
+                    viewModel.projects[idx] = updated
+                }
+                isSaving = false
+                dismiss()
+            } catch {
+                viewModel.error = error.localizedDescription
+                isSaving = false
+            }
+        }
+    }
+}
+
+// MARK: - Collaborations Sheet
+struct CollaborationsSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @StateObject private var viewModel = DependencyContainer.shared.projectsViewModel
+    
+    var body: some View {
+        NavigationStack {
+            List {
+                if !viewModel.sharedProjects.isEmpty {
+                    Section("Shared With Me") {
+                        ForEach(viewModel.sharedProjects) { project in
+                            HStack(spacing: 10) {
+                                if let emoji = project.emoji, !emoji.isEmpty {
+                                    Text(emoji).font(.system(size: 20))
+                                } else {
+                                    Image(systemName: "folder.fill")
+                                        .foregroundColor(.bcPrimary)
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(project.displayName)
+                                        .font(.system(size: 15, weight: .medium))
+                                    if let desc = project.description, !desc.isEmpty {
+                                        Text(desc)
+                                            .font(.system(size: 13))
+                                            .foregroundColor(.secondary)
+                                            .lineLimit(1)
+                                    }
+                                }
+                                Spacer()
+                            }
+                            .padding(.vertical, 4)
+                        }
+                    }
+                }
+                
+                if !viewModel.pendingInvitations.isEmpty {
+                    Section("Pending Invitations") {
+                        ForEach(viewModel.pendingInvitations, id: \.id) { invitation in
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "envelope.fill")
+                                        .foregroundColor(.green)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(invitation.projectName)
+                                            .font(.system(size: 15, weight: .medium))
+                                        Text("From \(invitation.inviterName)")
+                                            .font(.system(size: 13))
+                                            .foregroundColor(.secondary)
+                                        Text("Role: \(invitation.role.capitalized)")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(.bcPrimary)
+                                    }
+                                    Spacer()
+                                }
+                                
+                                HStack(spacing: 12) {
+                                    Button(action: {
+                                        viewModel.respondToInvitation(invitation.id, accept: true)
+                                    }) {
+                                        Text("Accept")
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .foregroundColor(.white)
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.vertical, 8)
+                                            .background(Color.green)
+                                            .cornerRadius(8)
+                                    }
+                                    
+                                    Button(action: {
+                                        viewModel.respondToInvitation(invitation.id, accept: false)
+                                    }) {
+                                        Text("Decline")
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .foregroundColor(.red)
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.vertical, 8)
+                                            .background(Color.red.opacity(0.1))
+                                            .cornerRadius(8)
+                                    }
+                                }
+                            }
+                            .padding(.vertical, 4)
+                        }
+                    }
+                }
+                
+                if viewModel.sharedProjects.isEmpty && viewModel.pendingInvitations.isEmpty {
+                    Section {
+                        VStack(spacing: 12) {
+                            Image(systemName: "person.2.slash")
+                                .font(.system(size: 36))
+                                .foregroundColor(.secondary.opacity(0.5))
+                            Text("No collaborations yet")
+                                .font(.system(size: 15))
+                                .foregroundColor(.secondary)
+                            Text("When someone invites you to a project, it will appear here.")
+                                .font(.system(size: 13))
+                                .foregroundColor(.secondary.opacity(0.7))
+                                .multilineTextAlignment(.center)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 30)
+                    }
+                }
+            }
+            .navigationTitle("Collaborations")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+            .onAppear {
+                viewModel.loadSharedProjects()
+                viewModel.loadPendingInvitations()
+            }
+        }
+    }
 }
 
 // MARK: - Drawer Content
 struct ChatDrawerContent: View {
     @Binding var showDrawer: Bool
     @Binding var showAllChats: Bool
+    @Binding var showCollaborations: Bool
     @EnvironmentObject private var appState: AppState
     @EnvironmentObject private var chatViewModel: ChatViewModel
     @EnvironmentObject private var authViewModel: AuthViewModel
@@ -1165,9 +1328,10 @@ struct ChatDrawerContent: View {
                 .padding(.vertical, 8)
             
             drawerMenuItem(icon: "person.2", label: "View All") {
-                appState.selectedProjectId = nil
-                appState.selectedTab = .projects
                 showDrawer = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    showCollaborations = true
+                }
             }
             
             if !projectsVM.pendingInvitations.isEmpty {

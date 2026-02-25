@@ -49,7 +49,7 @@ final class ProjectsViewModel: ObservableObject {
     // MARK: - Dependencies
     private let getProjectsUseCase: GetProjectsUseCase
     private let createProjectUseCase: CreateProjectUseCase
-    private let projectRepository: ProjectRepository
+    let projectRepository: ProjectRepository
     
     // MARK: - Init
     init(

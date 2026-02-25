@@ -119,13 +119,13 @@ final class ChatRepositoryImpl: ChatRepository {
             endpoint: .conversation(id: id)
         )
         
-        guard response.success, let data = response.data, let conversation = data.conversation else {
+        guard response.success, let data = response.data else {
             throw ChatError.conversationNotFound
         }
         
         let messages = data.messages?.map { $0.toDomain() } ?? []
         
-        return (conversation.toDomain(), messages)
+        return (data.resolvedConversation.toDomain(), messages)
     }
     
     // MARK: - Create Conversation
@@ -136,11 +136,11 @@ final class ChatRepositoryImpl: ChatRepository {
             body: request
         )
         
-        guard response.success, let conversation = response.data?.conversation else {
+        guard response.success, let data = response.data else {
             throw ChatError.serverError("Failed to create conversation")
         }
         
-        return conversation.toDomain()
+        return data.resolvedConversation.toDomain()
     }
     
     // MARK: - Update Conversation
@@ -155,11 +155,11 @@ final class ChatRepositoryImpl: ChatRepository {
             body: request
         )
         
-        guard response.success, let conversation = response.data?.conversation else {
+        guard response.success, let data = response.data else {
             throw ChatError.serverError("Failed to update conversation")
         }
         
-        return conversation.toDomain()
+        return data.resolvedConversation.toDomain()
     }
     
     // MARK: - Delete Conversation

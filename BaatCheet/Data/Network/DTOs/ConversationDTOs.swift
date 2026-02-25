@@ -43,8 +43,39 @@ struct ConversationResponseDTO: Decodable {
 }
 
 struct ConversationDetailDTO: Decodable {
-    let conversation: ConversationDTO?
+    let id: String?
+    let title: String?
+    let userId: String?
+    let projectId: String?
+    let systemPrompt: String?
+    let model: String?
+    let tags: [String]?
+    let isArchived: Bool?
+    let isPinned: Bool?
+    let totalTokens: Int?
+    let createdAt: String?
+    let updatedAt: String?
     let messages: [MessageDTO]?
+    let conversation: ConversationDTO?
+    
+    var resolvedConversation: ConversationDTO {
+        if let conversation = conversation {
+            return conversation
+        }
+        return ConversationDTO(
+            id: id ?? "",
+            title: title,
+            userId: userId,
+            projectId: projectId,
+            messageCount: messages?.count,
+            isPinned: isPinned,
+            isArchived: isArchived,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            lastMessage: nil,
+            tags: tags
+        )
+    }
 }
 
 // MARK: - Conversation DTO
@@ -87,6 +118,32 @@ struct MessageDTO: Decodable {
     let imageResult: ImageResultDTO?
     let feedback: String?
     let tokens: TokenInfoDTO?
+    
+    enum CodingKeys: String, CodingKey {
+        case id, conversationId, role, content, timestamp, createdAt
+        case attachments, imageResult, feedback, tokens
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        conversationId = try container.decodeIfPresent(String.self, forKey: .conversationId)
+        role = try container.decode(String.self, forKey: .role)
+        content = try container.decode(String.self, forKey: .content)
+        timestamp = try container.decodeIfPresent(String.self, forKey: .timestamp)
+        createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt)
+        attachments = try container.decodeIfPresent([AttachmentDTO].self, forKey: .attachments)
+        imageResult = try container.decodeIfPresent(ImageResultDTO.self, forKey: .imageResult)
+        feedback = try container.decodeIfPresent(String.self, forKey: .feedback)
+        
+        if let tokenInfo = try? container.decodeIfPresent(TokenInfoDTO.self, forKey: .tokens) {
+            tokens = tokenInfo
+        } else if let tokenCount = try? container.decodeIfPresent(Int.self, forKey: .tokens) {
+            tokens = TokenInfoDTO(prompt: nil, completion: nil, total: tokenCount)
+        } else {
+            tokens = nil
+        }
+    }
     
     func toDomain() -> ChatMessage {
         ChatMessage(
