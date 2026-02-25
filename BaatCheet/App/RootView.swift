@@ -78,8 +78,37 @@ struct MainDrawerView: View {
     
     var body: some View {
         ZStack(alignment: .leading) {
-            NavigationStack {
-                currentScreen
+            if appState.selectedProjectId != nil {
+                NavigationStack {
+                    ProjectDetailInlineView(projectId: appState.selectedProjectId!)
+                }
+            } else {
+                TabView(selection: $appState.selectedTab) {
+                    NavigationStack {
+                        ChatView()
+                    }
+                    .tabItem {
+                        Label("Chat", systemImage: "bubble.left.and.bubble.right")
+                    }
+                    .tag(AppState.Tab.chat)
+                    
+                    NavigationStack {
+                        ProjectsView()
+                    }
+                    .tabItem {
+                        Label("Projects", systemImage: "folder")
+                    }
+                    .tag(AppState.Tab.projects)
+                    
+                    NavigationStack {
+                        SettingsView()
+                    }
+                    .tabItem {
+                        Label("Settings", systemImage: "gearshape")
+                    }
+                    .tag(AppState.Tab.settings)
+                }
+                .tint(.bcPrimary)
             }
             
             if showDrawer {
@@ -103,22 +132,6 @@ struct MainDrawerView: View {
         }
         .sheet(isPresented: $showCollaborations) {
             CollaborationsSheet()
-        }
-    }
-    
-    @ViewBuilder
-    private var currentScreen: some View {
-        if let projectId = appState.selectedProjectId {
-            ProjectDetailInlineView(projectId: projectId)
-        } else {
-            switch appState.selectedTab {
-            case .chat:
-                ChatView()
-            case .projects:
-                ProjectsView()
-            case .settings:
-                SettingsView()
-            }
         }
     }
 }

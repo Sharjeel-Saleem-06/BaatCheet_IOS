@@ -39,6 +39,11 @@ struct ChatView: View {
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 12) {
+                    Button(action: {
+                        // Search action placeholder
+                    }) {
+                        Image(systemName: "magnifyingglass")
+                    }
                     if chatViewModel.currentConversationId != nil {
                         Button(action: { chatViewModel.createShareLink() }) {
                             Image(systemName: "square.and.arrow.up")
