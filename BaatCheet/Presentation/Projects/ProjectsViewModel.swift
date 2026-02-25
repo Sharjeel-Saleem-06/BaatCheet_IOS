@@ -79,6 +79,11 @@ final class ProjectsViewModel: ObservableObject {
     
     // MARK: - Load Project Details
     func loadProject(_ projectId: String) {
+        selectedProject = nil
+        projectConversations = []
+        collaborators = []
+        teamMessages = []
+        
         Task {
             isLoadingProject = true
             do {

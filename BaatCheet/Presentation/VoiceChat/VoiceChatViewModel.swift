@@ -12,7 +12,7 @@ import AVFoundation
 
 // MARK: - Voice Chat ViewModel
 @MainActor
-final class VoiceChatViewModel: ObservableObject {
+final class VoiceChatViewModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     // MARK: - Published State
     @Published var currentStep: VoiceModeStep = .intro
     @Published var availableVoices: [AIVoice] = []
@@ -45,7 +45,20 @@ final class VoiceChatViewModel: ObservableObject {
     // MARK: - Init
     init(chatRepository: ChatRepository) {
         self.chatRepository = chatRepository
+        super.init()
+        synthesizer.delegate = self
         loadAvailableVoices()
+    }
+    
+    // MARK: - AVSpeechSynthesizerDelegate
+    nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+        Task { @MainActor in
+            self.isAISpeaking = false
+            self.currentTranscript = ""
+            if self.currentStep == .activeCall && !self.isMuted {
+                self.startRecording()
+            }
+        }
     }
     
     // MARK: - Voice Loading
@@ -292,14 +305,6 @@ final class VoiceChatViewModel: ObservableObject {
         utterance.volume = 1.0
         
         synthesizer.speak(utterance)
-        
-        // Monitor when speech ends
-        DispatchQueue.main.asyncAfter(deadline: .now() + Double(text.count) * 0.05 + 0.5) { [weak self] in
-            self?.isAISpeaking = false
-            // Resume listening
-            self?.currentTranscript = ""
-            self?.startRecording()
-        }
     }
     
     // MARK: - Mute Toggle
