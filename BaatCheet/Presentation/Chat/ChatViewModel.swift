@@ -372,6 +372,23 @@ final class ChatViewModel: ObservableObject {
         }
     }
     
+    @MainActor
+    func updateProfile(firstName: String, lastName: String, avatarData: Data?) async throws {
+        if let avatarData = avatarData {
+            let avatarUrl = try await profileRepository.uploadAvatar(
+                imageData: avatarData,
+                fileName: "avatar_\(UUID().uuidString).jpg"
+            )
+            userProfile?.avatar = avatarUrl
+        }
+        
+        let updated = try await profileRepository.updateProfile(
+            firstName: firstName.isEmpty ? nil : firstName,
+            lastName: lastName.isEmpty ? nil : lastName
+        )
+        userProfile = updated
+    }
+    
     // MARK: - Sharing
     func createShareLink() {
         guard let conversationId = currentConversationId else { return }

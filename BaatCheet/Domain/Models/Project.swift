@@ -179,6 +179,9 @@ struct TeamChatMessage: Identifiable, Equatable {
     let createdAt: String
     var updatedAt: String?
     var isEdited: Bool
+    var messageType: String?
+    var imageUrl: String?
+    var senderRole: String?
     
     // MARK: - Computed Properties
     var formattedTimestamp: String {

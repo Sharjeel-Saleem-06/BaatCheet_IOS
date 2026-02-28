@@ -6,6 +6,8 @@
 //
 
 import SwiftUI
+import SafariServices
+import PhotosUI
 
 struct SettingsView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
@@ -18,6 +20,7 @@ struct SettingsView: View {
     @State private var showChangePassword = false
     @State private var showCustomInstructions = false
     @State private var showEditProfile = false
+    @State private var safariURL: URL?
     
     @State private var profileExpanded = true
     @State private var usageExpanded = true
@@ -73,6 +76,10 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showEditProfile) {
             EditProfileSheet()
+        }
+        .sheet(item: $safariURL) { url in
+            SafariView(url: url)
+                .ignoresSafeArea()
         }
     }
     
@@ -221,7 +228,7 @@ struct SettingsView: View {
     private var aboutLegalSection: some View {
         Section {
             DisclosureGroup(isExpanded: $aboutExpanded) {
-                Link(destination: URL(string: "https://baatcheet.app/privacy")!) {
+                Button(action: { safariURL = URL(string: "https://baatcheet.app/privacy") }) {
                     HStack {
                         Label("Privacy Policy", systemImage: "hand.raised")
                             .foregroundColor(.primary)
@@ -232,7 +239,7 @@ struct SettingsView: View {
                     }
                 }
                 
-                Link(destination: URL(string: "https://baatcheet.app/terms")!) {
+                Button(action: { safariURL = URL(string: "https://baatcheet.app/terms") }) {
                     HStack {
                         Label("Terms of Service", systemImage: "doc.text")
                             .foregroundColor(.primary)
@@ -338,54 +345,88 @@ struct EditProfileSheet: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var chatViewModel: ChatViewModel
     
-    @State private var displayName = ""
+    @State private var firstName = ""
+    @State private var lastName = ""
     @State private var isLoading = false
+    @State private var errorMessage: String?
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var selectedPhotoData: Data?
+    @State private var selectedPhotoImage: Image?
     
     var body: some View {
         NavigationStack {
-            VStack(spacing: 24) {
-                if let avatarUrl = chatViewModel.userProfile?.avatar,
-                   let url = URL(string: avatarUrl) {
-                    AsyncImage(url: url) { image in
-                        image.resizable().aspectRatio(contentMode: .fill)
-                    } placeholder: {
-                        Circle()
-                            .fill(Color.bcPrimary.opacity(0.2))
-                            .overlay(
-                                Text(chatViewModel.userProfile?.initials ?? "?")
-                                    .font(.system(size: 32, weight: .semibold))
-                                    .foregroundColor(.bcPrimary)
-                            )
+            ScrollView {
+                VStack(spacing: 24) {
+                    ZStack(alignment: .bottomTrailing) {
+                        if let selectedPhotoImage {
+                            selectedPhotoImage
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 100, height: 100)
+                                .clipShape(Circle())
+                        } else if let avatarUrl = chatViewModel.userProfile?.avatar,
+                                  let url = URL(string: avatarUrl) {
+                            AsyncImage(url: url) { image in
+                                image.resizable().aspectRatio(contentMode: .fill)
+                            } placeholder: {
+                                profilePlaceholder
+                            }
+                            .frame(width: 100, height: 100)
+                            .clipShape(Circle())
+                        } else {
+                            profilePlaceholder
+                        }
+                        
+                        PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                            Image(systemName: "camera.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(.white)
+                                .frame(width: 32, height: 32)
+                                .background(Color.bcPrimary)
+                                .clipShape(Circle())
+                                .overlay(Circle().stroke(Color(UIColor.systemBackground), lineWidth: 2))
+                        }
+                        .offset(x: 4, y: 4)
                     }
-                    .frame(width: 80, height: 80)
-                    .clipShape(Circle())
-                } else {
-                    Circle()
-                        .fill(Color.bcPrimary.opacity(0.2))
-                        .frame(width: 80, height: 80)
-                        .overlay(
-                            Text(chatViewModel.userProfile?.initials ?? "?")
-                                .font(.system(size: 32, weight: .semibold))
-                                .foregroundColor(.bcPrimary)
-                        )
-                }
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Display Name")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.secondary)
+                    .padding(.top, 10)
                     
-                    TextField("Your name", text: $displayName)
-                        .font(.system(size: 16))
-                        .padding(12)
-                        .background(Color(UIColor.secondarySystemBackground))
-                        .cornerRadius(10)
+                    VStack(alignment: .leading, spacing: 16) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("First Name")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.secondary)
+                            
+                            TextField("First name", text: $firstName)
+                                .font(.system(size: 16))
+                                .padding(12)
+                                .background(Color(UIColor.secondarySystemBackground))
+                                .cornerRadius(10)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Last Name")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.secondary)
+                            
+                            TextField("Last name", text: $lastName)
+                                .font(.system(size: 16))
+                                .padding(12)
+                                .background(Color(UIColor.secondarySystemBackground))
+                                .cornerRadius(10)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    
+                    if let error = errorMessage {
+                        Text(error)
+                            .font(.system(size: 14))
+                            .foregroundColor(.red)
+                            .padding(.horizontal, 20)
+                    }
+                    
+                    Spacer()
                 }
-                .padding(.horizontal, 20)
-                
-                Spacer()
             }
-            .padding(.top, 30)
             .navigationTitle("Edit Profile")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -394,13 +435,54 @@ struct EditProfileSheet: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {
-                        dismiss()
+                        saveProfile()
                     }
-                    .disabled(displayName.trimmed.isEmpty || isLoading)
+                    .disabled(firstName.trimmed.isEmpty || isLoading)
                 }
             }
             .onAppear {
-                displayName = chatViewModel.userProfile?.displayName ?? ""
+                firstName = chatViewModel.userProfile?.firstName ?? ""
+                lastName = chatViewModel.userProfile?.lastName ?? ""
+            }
+            .onChange(of: selectedPhotoItem) { _, newItem in
+                Task {
+                    if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                        selectedPhotoData = data
+                        if let uiImage = UIImage(data: data) {
+                            selectedPhotoImage = Image(uiImage: uiImage)
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    private var profilePlaceholder: some View {
+        Circle()
+            .fill(Color.bcPrimary.opacity(0.2))
+            .frame(width: 100, height: 100)
+            .overlay(
+                Text(chatViewModel.userProfile?.initials ?? "?")
+                    .font(.system(size: 36, weight: .semibold))
+                    .foregroundColor(.bcPrimary)
+            )
+    }
+    
+    private func saveProfile() {
+        isLoading = true
+        errorMessage = nil
+        Task {
+            do {
+                try await chatViewModel.updateProfile(
+                    firstName: firstName.trimmed,
+                    lastName: lastName.trimmed,
+                    avatarData: selectedPhotoData
+                )
+                isLoading = false
+                dismiss()
+            } catch {
+                errorMessage = error.localizedDescription
+                isLoading = false
             }
         }
     }
@@ -525,6 +607,21 @@ struct CustomInstructionsSheet: View {
             }
         }
     }
+}
+
+// MARK: - Safari View Wrapper
+struct SafariView: UIViewControllerRepresentable {
+    let url: URL
+    
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        SFSafariViewController(url: url)
+    }
+    
+    func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {}
+}
+
+extension URL: @retroactive Identifiable {
+    public var id: String { absoluteString }
 }
 
 #Preview {

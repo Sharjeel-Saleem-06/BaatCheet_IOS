@@ -526,21 +526,46 @@ struct ProjectTeamChatView: View {
     
     private func teamMessageBubble(_ message: TeamChatMessage) -> some View {
         HStack(alignment: .top, spacing: 8) {
-            // Avatar
-            Circle()
-                .fill(avatarColor(for: message.user?.displayName ?? "U"))
-                .frame(width: 36, height: 36)
-                .overlay(
-                    Text(message.user?.initials ?? "U")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(.white)
-                )
+            if let avatarUrl = message.user?.avatar, let url = URL(string: avatarUrl) {
+                AsyncImage(url: url) { image in
+                    image.resizable().aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    Circle()
+                        .fill(avatarColor(for: message.user?.displayName ?? "U"))
+                        .overlay(
+                            Text(message.user?.initials ?? "U")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.white)
+                        )
+                }
+                .frame(width: 40, height: 40)
+                .clipShape(Circle())
+            } else {
+                Circle()
+                    .fill(avatarColor(for: message.user?.displayName ?? "U"))
+                    .frame(width: 40, height: 40)
+                    .overlay(
+                        Text(message.user?.initials ?? "U")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.white)
+                    )
+            }
             
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Text(message.user?.displayName ?? "Unknown")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(nameColor(for: message.user?.displayName ?? ""))
+                    
+                    if let role = message.senderRole, role != "viewer" {
+                        Text(role.capitalized)
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(role == "admin" ? Color.orange : Color.blue)
+                            .cornerRadius(4)
+                    }
                     
                     Spacer()
                     
@@ -549,13 +574,54 @@ struct ProjectTeamChatView: View {
                         .foregroundColor(.secondary)
                 }
                 
-                Text(message.content)
-                    .font(.system(size: 14))
-                    .foregroundColor(.primary)
-                    .padding(.vertical, 6)
-                    .padding(.horizontal, 10)
-                    .background(Color(UIColor.secondarySystemBackground))
-                    .cornerRadius(12)
+                if message.messageType == "image", let imageUrl = message.imageUrl, let url = URL(string: imageUrl) {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image.resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(maxWidth: 200, maxHeight: 200)
+                                .cornerRadius(12)
+                        case .failure:
+                            HStack(spacing: 6) {
+                                Image(systemName: "photo")
+                                    .foregroundColor(.secondary)
+                                Text("Image failed to load")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(10)
+                            .background(Color(UIColor.secondarySystemBackground))
+                            .cornerRadius(12)
+                        default:
+                            ProgressView()
+                                .frame(width: 100, height: 100)
+                        }
+                    }
+                    
+                    if !message.content.isEmpty && message.content != "Image" {
+                        Text(message.content)
+                            .font(.system(size: 14))
+                            .foregroundColor(.primary)
+                    }
+                } else if message.messageType == "system" {
+                    Text(message.content)
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
+                        .italic()
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 10)
+                        .background(Color(UIColor.tertiarySystemBackground))
+                        .cornerRadius(12)
+                } else {
+                    Text(message.content)
+                        .font(.system(size: 14))
+                        .foregroundColor(.primary)
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 10)
+                        .background(Color(UIColor.secondarySystemBackground))
+                        .cornerRadius(12)
+                }
             }
         }
         .padding(.horizontal, 16)

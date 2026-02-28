@@ -233,6 +233,18 @@ struct ProjectChatMessagesResponseDTO: Decodable {
 struct ProjectChatMessagesDataDTO: Decodable {
     let messages: [TeamChatMessageDTO]?
     let total: Int?
+    let canSendMessage: Bool?
+    let myRole: String?
+    let isOwner: Bool?
+    let settings: ProjectChatSettingsDTO?
+}
+
+struct ProjectChatSettingsDTO: Decodable {
+    let chatAccess: String?
+    let allowImages: Bool?
+    let allowEmojis: Bool?
+    let allowEditing: Bool?
+    let allowDeleting: Bool?
 }
 
 struct TeamChatMessageDTO: Decodable {
@@ -243,6 +255,8 @@ struct TeamChatMessageDTO: Decodable {
     let sender: UserSummaryDTO?
     let user: UserSummaryDTO?
     let messageType: String?
+    let imageUrl: String?
+    let imageThumbnail: String?
     let senderRole: String?
     let isOwner: Bool?
     let isEdited: Bool?
@@ -260,9 +274,13 @@ struct TeamChatMessageDTO: Decodable {
             user: (sender ?? user)?.toDomain(),
             createdAt: createdAt ?? "",
             updatedAt: updatedAt,
-            isEdited: isEdited ?? false
+            isEdited: isEdited ?? false,
+            messageType: messageType,
+            imageUrl: imageUrl ?? imageThumbnail,
+            senderRole: senderRole
         )
     }
+}
 }
 
 struct SendTeamMessageRequestDTO: Encodable {
