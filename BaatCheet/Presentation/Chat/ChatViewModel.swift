@@ -453,6 +453,22 @@ final class ChatViewModel: ObservableObject {
         }
     }
     
+    // MARK: - Clear History
+    func clearHistory() {
+        Task {
+            do {
+                for conversation in conversations {
+                    try await chatRepository.deleteConversation(conversation.id)
+                }
+                conversations = []
+                messages = []
+                currentConversationId = nil
+            } catch {
+                self.error = error.localizedDescription
+            }
+        }
+    }
+    
     // MARK: - Clear Error
     func clearError() {
         error = nil

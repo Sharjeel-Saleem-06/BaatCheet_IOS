@@ -17,79 +17,24 @@ struct SettingsView: View {
     @State private var showClearHistoryConfirmation = false
     @State private var showChangePassword = false
     @State private var showCustomInstructions = false
+    @State private var showEditProfile = false
+    
+    @State private var profileExpanded = true
+    @State private var usageExpanded = true
+    @State private var personalizationExpanded = true
+    @State private var dataExpanded = true
+    @State private var aboutExpanded = true
+    @State private var accountExpanded = true
     
     var body: some View {
         List {
-            // Profile
-            Section {
-                profileHeader
-            }
-            
-            // Usage
-            Section("Usage") {
-                usageRow
-            }
-            
-            // Personalization
-            Section("Personalization") {
-                Button(action: { showCustomInstructions = true }) {
-                    Label("Custom Instructions", systemImage: "text.bubble")
-                        .foregroundColor(.primary)
-                }
-            }
-            
-            // Data Management
-            Section("Data Management") {
-                Button(action: { showClearHistoryConfirmation = true }) {
-                    Label("Clear Chat History", systemImage: "trash")
-                        .foregroundColor(.primary)
-                }
-            }
-            
-            // About & Legal
-            Section("About & Legal") {
-                Link(destination: URL(string: "https://baatcheet.app/privacy")!) {
-                    Label("Privacy Policy", systemImage: "hand.raised")
-                        .foregroundColor(.primary)
-                }
-                
-                Link(destination: URL(string: "https://baatcheet.app/terms")!) {
-                    Label("Terms of Service", systemImage: "doc.text")
-                        .foregroundColor(.primary)
-                }
-                
-                Link(destination: URL(string: "mailto:support@baatcheet.app")!) {
-                    Label("Contact Support", systemImage: "envelope")
-                        .foregroundColor(.primary)
-                }
-                
-                HStack {
-                    Label("Version", systemImage: "info.circle")
-                    Spacer()
-                    Text("1.0.0")
-                        .foregroundColor(.secondary)
-                }
-            }
-            
-            // Account & Security
-            Section("Account & Security") {
-                Button(action: { showChangePassword = true }) {
-                    Label("Change Password", systemImage: "lock.rotation")
-                        .foregroundColor(.primary)
-                }
-                
-                Button(role: .destructive) {
-                    showLogoutConfirmation = true
-                } label: {
-                    Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
-                }
-                
-                Button(role: .destructive) {
-                    showDeleteAccountConfirmation = true
-                } label: {
-                    Label("Delete Account", systemImage: "trash")
-                }
-            }
+            profileSection
+            usageSection
+            personalizationSection
+            dataManagementSection
+            aboutLegalSection
+            accountSecuritySection
+            appInfoSection
         }
         .listStyle(.insetGrouped)
         .navigationTitle("Settings")
@@ -114,7 +59,7 @@ struct SettingsView: View {
         }
         .confirmationDialog("Clear Chat History?", isPresented: $showClearHistoryConfirmation) {
             Button("Clear All", role: .destructive) {
-                // chatViewModel.clearHistory()
+                chatViewModel.clearHistory()
             }
             Button("Cancel", role: .cancel) {}
         } message: {
@@ -126,46 +71,241 @@ struct SettingsView: View {
         .sheet(isPresented: $showCustomInstructions) {
             CustomInstructionsSheet()
         }
+        .sheet(isPresented: $showEditProfile) {
+            EditProfileSheet()
+        }
     }
     
-    // MARK: - Profile Header
-    private var profileHeader: some View {
-        HStack(spacing: 14) {
-            if let avatarUrl = chatViewModel.userProfile?.avatar,
-               let url = URL(string: avatarUrl) {
-                AsyncImage(url: url) { image in
-                    image.resizable().aspectRatio(contentMode: .fill)
-                } placeholder: {
+    // MARK: - Profile Section
+    private var profileSection: some View {
+        Section {
+            HStack(spacing: 14) {
+                if let avatarUrl = chatViewModel.userProfile?.avatar,
+                   let url = URL(string: avatarUrl) {
+                    AsyncImage(url: url) { image in
+                        image.resizable().aspectRatio(contentMode: .fill)
+                    } placeholder: {
+                        avatarPlaceholder
+                    }
+                    .frame(width: 56, height: 56)
+                    .clipShape(Circle())
+                } else {
                     avatarPlaceholder
                 }
-                .frame(width: 56, height: 56)
-                .clipShape(Circle())
-            } else {
-                avatarPlaceholder
-            }
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(chatViewModel.userProfile?.displayName ?? "User")
-                    .font(.system(size: 18, weight: .semibold))
                 
-                Text(chatViewModel.userProfile?.email ?? "")
-                    .font(.system(size: 14))
-                    .foregroundColor(.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(chatViewModel.userProfile?.displayName ?? "User")
+                        .font(.system(size: 18, weight: .semibold))
+                    
+                    Text(chatViewModel.userProfile?.email ?? "")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                    
+                    Text("Free tier")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.bcPrimary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 2)
+                        .background(Color.bcPrimary.opacity(0.1))
+                        .cornerRadius(8)
+                }
                 
-                Text("Free tier")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.bcPrimary)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 2)
-                    .background(Color.bcPrimary.opacity(0.1))
-                    .cornerRadius(8)
+                Spacer()
+                
+                Button(action: { showEditProfile = true }) {
+                    Image(systemName: "pencil.circle")
+                        .font(.system(size: 22))
+                        .foregroundColor(.bcPrimary)
+                }
             }
-            
-            Spacer()
+            .padding(.vertical, 4)
         }
-        .padding(.vertical, 4)
     }
     
+    // MARK: - Usage Section
+    private var usageSection: some View {
+        Section {
+            DisclosureGroup(isExpanded: $usageExpanded) {
+                VStack(alignment: .leading, spacing: 12) {
+                    usageBar(
+                        label: "Messages",
+                        used: chatViewModel.usageInfo.messagesUsed,
+                        limit: chatViewModel.usageInfo.messagesLimit,
+                        percentage: chatViewModel.usageInfo.messageUsagePercentage,
+                        color: .bcPrimary
+                    )
+                    
+                    usageBar(
+                        label: "Chats",
+                        used: chatViewModel.conversations.count,
+                        limit: 999,
+                        percentage: 0,
+                        color: .blue
+                    )
+                    
+                    usageBar(
+                        label: "Images/Day",
+                        used: chatViewModel.usageInfo.imagesUsed,
+                        limit: chatViewModel.usageInfo.imagesLimit,
+                        percentage: chatViewModel.usageInfo.imageUsagePercentage,
+                        color: .orange
+                    )
+                }
+            } label: {
+                Label("Usage", systemImage: "chart.bar")
+                    .font(.system(size: 15, weight: .medium))
+            }
+        }
+    }
+    
+    private func usageBar(label: String, used: Int, limit: Int, percentage: Double, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(label)
+                    .font(.system(size: 13))
+                Spacer()
+                Text("\(used)/\(limit)")
+                    .font(.system(size: 13))
+                    .foregroundColor(.secondary)
+            }
+            if percentage > 0 {
+                ProgressView(value: percentage)
+                    .tint(color)
+            }
+        }
+    }
+    
+    // MARK: - Personalization
+    private var personalizationSection: some View {
+        Section {
+            DisclosureGroup(isExpanded: $personalizationExpanded) {
+                Button(action: { showCustomInstructions = true }) {
+                    HStack {
+                        Label("Custom Instructions", systemImage: "text.bubble")
+                            .foregroundColor(.primary)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                    }
+                }
+            } label: {
+                Label("Personalization", systemImage: "person.text.rectangle")
+                    .font(.system(size: 15, weight: .medium))
+            }
+        }
+    }
+    
+    // MARK: - Data Management
+    private var dataManagementSection: some View {
+        Section {
+            DisclosureGroup(isExpanded: $dataExpanded) {
+                Button(action: { showClearHistoryConfirmation = true }) {
+                    HStack {
+                        Label("Clear Chat History", systemImage: "trash")
+                            .foregroundColor(.primary)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                    }
+                }
+            } label: {
+                Label("Data Management", systemImage: "externaldrive")
+                    .font(.system(size: 15, weight: .medium))
+            }
+        }
+    }
+    
+    // MARK: - About & Legal
+    private var aboutLegalSection: some View {
+        Section {
+            DisclosureGroup(isExpanded: $aboutExpanded) {
+                Link(destination: URL(string: "https://baatcheet.app/privacy")!) {
+                    HStack {
+                        Label("Privacy Policy", systemImage: "hand.raised")
+                            .foregroundColor(.primary)
+                        Spacer()
+                        Image(systemName: "arrow.up.right.square")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                Link(destination: URL(string: "https://baatcheet.app/terms")!) {
+                    HStack {
+                        Label("Terms of Service", systemImage: "doc.text")
+                            .foregroundColor(.primary)
+                        Spacer()
+                        Image(systemName: "arrow.up.right.square")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                Button(action: { openContactSupport() }) {
+                    HStack {
+                        Label("Contact Support", systemImage: "envelope")
+                            .foregroundColor(.primary)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                    }
+                }
+            } label: {
+                Label("About & Legal", systemImage: "info.circle")
+                    .font(.system(size: 15, weight: .medium))
+            }
+        }
+    }
+    
+    // MARK: - Account & Security
+    private var accountSecuritySection: some View {
+        Section {
+            DisclosureGroup(isExpanded: $accountExpanded) {
+                Button(action: { showChangePassword = true }) {
+                    HStack {
+                        Label("Change Password", systemImage: "lock.rotation")
+                            .foregroundColor(.primary)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                Button(role: .destructive) {
+                    showLogoutConfirmation = true
+                } label: {
+                    Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                }
+                
+                Button(role: .destructive) {
+                    showDeleteAccountConfirmation = true
+                } label: {
+                    Label("Delete Account", systemImage: "trash")
+                }
+            } label: {
+                Label("Account & Security", systemImage: "shield")
+                    .font(.system(size: 15, weight: .medium))
+            }
+        }
+    }
+    
+    // MARK: - App Info
+    private var appInfoSection: some View {
+        Section {
+            HStack {
+                Label("Version", systemImage: "app.badge")
+                Spacer()
+                Text("1.0.0")
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+    
+    // MARK: - Helpers
     private var avatarPlaceholder: some View {
         Circle()
             .fill(Color.bcPrimary.opacity(0.2))
@@ -177,33 +317,90 @@ struct SettingsView: View {
             )
     }
     
-    // MARK: - Usage
-    private var usageRow: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text("Messages")
-                        .font(.system(size: 13))
-                    Spacer()
-                    Text("\(chatViewModel.usageInfo.messagesUsed)/\(chatViewModel.usageInfo.messagesLimit)")
-                        .font(.system(size: 13))
-                        .foregroundColor(.secondary)
+    private func openContactSupport() {
+        let email = "support@baatcheet.app"
+        let subject = "BaatCheet iOS Support"
+        let mailtoString = "mailto:\(email)?subject=\(subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? subject)"
+        
+        if let url = URL(string: mailtoString), UIApplication.shared.canOpenURL(url) {
+            UIApplication.shared.open(url)
+        } else if let gmailUrl = URL(string: "googlegmail:///co?to=\(email)&subject=\(subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? subject)"),
+                  UIApplication.shared.canOpenURL(gmailUrl) {
+            UIApplication.shared.open(gmailUrl)
+        } else {
+            UIPasteboard.general.string = email
+        }
+    }
+}
+
+// MARK: - Edit Profile Sheet
+struct EditProfileSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var chatViewModel: ChatViewModel
+    
+    @State private var displayName = ""
+    @State private var isLoading = false
+    
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+                if let avatarUrl = chatViewModel.userProfile?.avatar,
+                   let url = URL(string: avatarUrl) {
+                    AsyncImage(url: url) { image in
+                        image.resizable().aspectRatio(contentMode: .fill)
+                    } placeholder: {
+                        Circle()
+                            .fill(Color.bcPrimary.opacity(0.2))
+                            .overlay(
+                                Text(chatViewModel.userProfile?.initials ?? "?")
+                                    .font(.system(size: 32, weight: .semibold))
+                                    .foregroundColor(.bcPrimary)
+                            )
+                    }
+                    .frame(width: 80, height: 80)
+                    .clipShape(Circle())
+                } else {
+                    Circle()
+                        .fill(Color.bcPrimary.opacity(0.2))
+                        .frame(width: 80, height: 80)
+                        .overlay(
+                            Text(chatViewModel.userProfile?.initials ?? "?")
+                                .font(.system(size: 32, weight: .semibold))
+                                .foregroundColor(.bcPrimary)
+                        )
                 }
-                ProgressView(value: chatViewModel.usageInfo.messageUsagePercentage)
-                    .tint(.bcPrimary)
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Display Name")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                    
+                    TextField("Your name", text: $displayName)
+                        .font(.system(size: 16))
+                        .padding(12)
+                        .background(Color(UIColor.secondarySystemBackground))
+                        .cornerRadius(10)
+                }
+                .padding(.horizontal, 20)
+                
+                Spacer()
             }
-            
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text("Images/Day")
-                        .font(.system(size: 13))
-                    Spacer()
-                    Text("\(chatViewModel.usageInfo.imagesUsed)/\(chatViewModel.usageInfo.imagesLimit)")
-                        .font(.system(size: 13))
-                        .foregroundColor(.secondary)
+            .padding(.top, 30)
+            .navigationTitle("Edit Profile")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") { dismiss() }
                 }
-                ProgressView(value: chatViewModel.usageInfo.imageUsagePercentage)
-                    .tint(.orange)
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Save") {
+                        dismiss()
+                    }
+                    .disabled(displayName.trimmed.isEmpty || isLoading)
+                }
+            }
+            .onAppear {
+                displayName = chatViewModel.userProfile?.displayName ?? ""
             }
         }
     }

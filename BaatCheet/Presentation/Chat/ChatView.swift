@@ -39,11 +39,6 @@ struct ChatView: View {
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 12) {
-                    Button(action: {
-                        // Search action placeholder
-                    }) {
-                        Image(systemName: "magnifyingglass")
-                    }
                     if chatViewModel.currentConversationId != nil {
                         Button(action: { chatViewModel.createShareLink() }) {
                             Image(systemName: "square.and.arrow.up")
@@ -413,7 +408,7 @@ struct UploadedFileChip: View {
     }
 }
 
-// MARK: - Message Bubble View (matches Android: no AI circle, app icon for assistant)
+// MARK: - Message Bubble View (matches Android padding: h=16, v=6, inner h=14 v=10)
 struct MessageBubbleView: View {
     let message: ChatMessage
     let isSpeaking: Bool
@@ -424,9 +419,8 @@ struct MessageBubbleView: View {
     
     var body: some View {
         if message.isUser {
-            // User message: right aligned, blue background
             HStack {
-                Spacer()
+                Spacer(minLength: 60)
                 VStack(alignment: .trailing, spacing: 4) {
                     if !message.attachments.isEmpty {
                         AttachmentsRow(attachments: message.attachments)
@@ -439,11 +433,11 @@ struct MessageBubbleView: View {
                         .background(Color.bcPrimary)
                         .cornerRadius(18)
                 }
-                .frame(maxWidth: UIScreen.main.bounds.width * 0.8)
+                .frame(maxWidth: 340)
             }
-            .padding(.horizontal, 8)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 6)
         } else {
-            // AI message: left aligned, full width, light background
             HStack(alignment: .top, spacing: 8) {
                 Image("SplashLogo")
                     .resizable()
@@ -452,8 +446,14 @@ struct MessageBubbleView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                 
                 VStack(alignment: .leading, spacing: 6) {
-                    if message.isStreaming {
-                        StreamingIndicator()
+                    if message.isStreaming && message.content.isEmpty {
+                        TypingIndicator()
+                    } else if message.isStreaming && !message.content.isEmpty {
+                        Text(message.content)
+                            .font(.system(size: 15))
+                            .foregroundColor(.primary)
+                            .textSelection(.enabled)
+                        StreamingCursor()
                     } else {
                         if let imageResult = message.imageResult, imageResult.success {
                             GeneratedImageView(imageResult: imageResult)
@@ -479,11 +479,15 @@ struct MessageBubbleView: View {
                             actionButton("doc.on.doc", action: { UIPasteboard.general.string = message.content })
                             actionButton("arrow.clockwise", action: onRegenerate)
                         }
-                        .padding(.top, 2)
+                        .padding(.top, 4)
+                        .padding(.leading, 0)
                     }
                 }
+                
+                Spacer(minLength: 0)
             }
-            .padding(.horizontal, 8)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 6)
         }
     }
     
@@ -496,27 +500,44 @@ struct MessageBubbleView: View {
     }
 }
 
-// MARK: - Streaming Indicator
-struct StreamingIndicator: View {
+// MARK: - Typing Indicator (matches Android: 3 bouncing green dots)
+struct TypingIndicator: View {
     @State private var animating = false
     
     var body: some View {
         HStack(spacing: 4) {
             ForEach(0..<3, id: \.self) { index in
                 Circle()
-                    .fill(Color.gray)
+                    .fill(Color(red: 0.204, green: 0.78, blue: 0.349))
                     .frame(width: 8, height: 8)
-                    .opacity(animating ? 1 : 0.3)
+                    .opacity(animating ? 1.0 : 0.3)
                     .animation(
-                        .easeInOut(duration: 0.6).repeatForever().delay(Double(index) * 0.2),
+                        .easeInOut(duration: 0.6)
+                            .repeatForever(autoreverses: true)
+                            .delay(Double(index) * 0.2),
                         value: animating
                     )
             }
         }
-        .padding(12)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
         .background(Color(UIColor.secondarySystemBackground))
         .cornerRadius(16)
         .onAppear { animating = true }
+    }
+}
+
+// MARK: - Streaming Cursor (blinking cursor while content is being generated)
+struct StreamingCursor: View {
+    @State private var visible = true
+    
+    var body: some View {
+        Rectangle()
+            .fill(Color.primary)
+            .frame(width: 2, height: 16)
+            .opacity(visible ? 1 : 0)
+            .animation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true), value: visible)
+            .onAppear { visible.toggle() }
     }
 }
 

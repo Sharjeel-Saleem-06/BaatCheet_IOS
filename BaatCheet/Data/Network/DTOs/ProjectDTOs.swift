@@ -238,18 +238,26 @@ struct ProjectChatMessagesDataDTO: Decodable {
 struct TeamChatMessageDTO: Decodable {
     let id: String
     let content: String
-    let userId: String
+    let senderId: String?
+    let userId: String?
+    let sender: UserSummaryDTO?
     let user: UserSummaryDTO?
+    let messageType: String?
+    let senderRole: String?
+    let isOwner: Bool?
+    let isEdited: Bool?
+    let canEdit: Bool?
+    let canDeleteForMe: Bool?
+    let canDeleteForEveryone: Bool?
     let createdAt: String?
     let updatedAt: String?
-    let isEdited: Bool?
     
     func toDomain() -> TeamChatMessage {
         TeamChatMessage(
             id: id,
             content: content,
-            userId: userId,
-            user: user?.toDomain(),
+            userId: senderId ?? userId ?? "",
+            user: (sender ?? user)?.toDomain(),
             createdAt: createdAt ?? "",
             updatedAt: updatedAt,
             isEdited: isEdited ?? false
