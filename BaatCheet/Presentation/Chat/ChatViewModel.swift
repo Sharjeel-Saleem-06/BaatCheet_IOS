@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import AVFoundation
 
 // MARK: - Chat ViewModel
 @MainActor
@@ -52,6 +53,7 @@ final class ChatViewModel: ObservableObject {
     
     // Speaking
     @Published var speakingMessageId: String?
+    private let speechSynthesizer = AVSpeechSynthesizer()
     
     // Project Context
     @Published var currentProjectId: String?
@@ -405,6 +407,36 @@ final class ChatViewModel: ObservableObject {
                 self.error = error.localizedDescription
             }
             isSharing = false
+        }
+    }
+    
+    // MARK: - Text-to-Speech
+    func speakMessage(_ message: ChatMessage) {
+        if speechSynthesizer.isSpeaking {
+            speechSynthesizer.stopSpeaking(at: .immediate)
+            if speakingMessageId == message.id {
+                speakingMessageId = nil
+                return
+            }
+        }
+        
+        let utterance = AVSpeechUtterance(string: message.content)
+        utterance.rate = AVSpeechUtteranceDefaultSpeechRate
+        utterance.pitchMultiplier = 1.0
+        utterance.volume = 1.0
+        
+        if let voice = AVSpeechSynthesisVoice(language: "en-US") {
+            utterance.voice = voice
+        }
+        
+        speakingMessageId = message.id
+        speechSynthesizer.speak(utterance)
+        
+        Task {
+            while speechSynthesizer.isSpeaking {
+                try? await Task.sleep(nanoseconds: 500_000_000)
+            }
+            speakingMessageId = nil
         }
     }
     

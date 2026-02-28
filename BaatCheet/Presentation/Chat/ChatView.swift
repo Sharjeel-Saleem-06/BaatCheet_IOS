@@ -112,7 +112,7 @@ struct ChatView: View {
                             MessageBubbleView(
                                 message: message,
                                 isSpeaking: chatViewModel.speakingMessageId == message.id,
-                                onSpeak: {},
+                                onSpeak: { chatViewModel.speakMessage(message) },
                                 onLike: { chatViewModel.submitFeedback(messageId: message.id, isLike: true) },
                                 onDislike: { chatViewModel.submitFeedback(messageId: message.id, isLike: false) },
                                 onRegenerate: { chatViewModel.regenerateResponse() }
@@ -168,7 +168,7 @@ struct ChatView: View {
         VStack(spacing: 0) {
             // Selected mode chip
             if let mode = chatViewModel.selectedMode, !mode.isEmpty {
-                HStack {
+                HStack(spacing: 6) {
                     Text(modeName(for: mode))
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.bcPrimary)
@@ -186,7 +186,7 @@ struct ChatView: View {
                     Spacer()
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, 8)
+                .padding(.vertical, 8)
             }
             
             // Uploaded files preview
@@ -419,8 +419,8 @@ struct MessageBubbleView: View {
     
     var body: some View {
         if message.isUser {
-            HStack {
-                Spacer(minLength: 60)
+            HStack(alignment: .bottom) {
+                Spacer(minLength: 40)
                 VStack(alignment: .trailing, spacing: 4) {
                     if !message.attachments.isEmpty {
                         AttachmentsRow(attachments: message.attachments)
@@ -433,10 +433,10 @@ struct MessageBubbleView: View {
                         .background(Color.bcPrimary)
                         .cornerRadius(18)
                 }
-                .frame(maxWidth: 340)
             }
+            .frame(maxWidth: .infinity, alignment: .trailing)
             .padding(.horizontal, 16)
-            .padding(.vertical, 6)
+            .padding(.vertical, 4)
         } else {
             HStack(alignment: .top, spacing: 8) {
                 Image("SplashLogo")

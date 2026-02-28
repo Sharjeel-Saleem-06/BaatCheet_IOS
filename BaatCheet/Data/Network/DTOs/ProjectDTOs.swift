@@ -281,7 +281,6 @@ struct TeamChatMessageDTO: Decodable {
         )
     }
 }
-}
 
 struct SendTeamMessageRequestDTO: Encodable {
     let content: String

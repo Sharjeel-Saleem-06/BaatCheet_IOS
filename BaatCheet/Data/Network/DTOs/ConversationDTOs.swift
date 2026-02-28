@@ -213,13 +213,15 @@ struct ShareResponseDTO: Decodable {
 
 struct ShareDataDTO: Decodable {
     let shareId: String?
+    let shareLink: String?
     let url: String?
     let expiresAt: String?
+    let accessCount: Int?
     
     func toDomain() -> ShareLink {
         ShareLink(
             shareId: shareId ?? "",
-            url: url ?? "",
+            url: shareLink ?? url ?? "",
             expiresAt: expiresAt
         )
     }
@@ -227,7 +229,7 @@ struct ShareDataDTO: Decodable {
 
 struct CreateShareRequestDTO: Encodable {
     let conversationId: String
-    let expiresIn: Int?  // hours
+    let expiresIn: Int?
 }
 
 // MARK: - Shared Conversation Response

@@ -63,10 +63,9 @@ final class ChatRepositoryImpl: ChatRepository {
     
     // MARK: - Regenerate Response
     func regenerateResponse(conversationId: String) async throws -> ChatMessage {
-        let request = RegenerateRequestDTO(conversationId: conversationId)
-        let response: ChatResponseDTO = try await apiClient.post(
+        let response: ChatResponseDTO = try await apiClient.postJSON(
             endpoint: .chatRegenerate,
-            body: request
+            json: ["conversationId": conversationId]
         )
         
         guard response.success, let data = response.data else {
@@ -82,15 +81,18 @@ final class ChatRepositoryImpl: ChatRepository {
     
     // MARK: - Submit Feedback
     func submitFeedback(messageId: String, conversationId: String, feedback: String, comment: String?) async throws {
-        let request = FeedbackRequestDTO(
-            messageId: messageId,
-            conversationId: conversationId,
-            feedback: feedback,
-            comment: comment
-        )
-        let _: SuccessResponse = try await apiClient.post(
+        var json: [String: Any] = [
+            "messageId": messageId,
+            "conversationId": conversationId,
+            "isPositive": feedback == "like",
+            "feedbackType": feedback
+        ]
+        if let comment = comment {
+            json["comment"] = comment
+        }
+        let _: SuccessResponse = try await apiClient.postJSON(
             endpoint: .chatFeedback,
-            body: request
+            json: json
         )
     }
     
@@ -187,10 +189,13 @@ final class ChatRepositoryImpl: ChatRepository {
     
     // MARK: - Share
     func createShareLink(conversationId: String, expiresIn: Int?) async throws -> ShareLink {
-        let request = CreateShareRequestDTO(conversationId: conversationId, expiresIn: expiresIn)
-        let response: ShareResponseDTO = try await apiClient.post(
+        var json: [String: Any] = ["conversationId": conversationId]
+        if let expiresIn = expiresIn {
+            json["expiresIn"] = expiresIn
+        }
+        let response: ShareResponseDTO = try await apiClient.postJSON(
             endpoint: .chatShare,
-            body: request
+            json: json
         )
         
         guard response.success, let data = response.data else {

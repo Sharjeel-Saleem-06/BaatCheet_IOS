@@ -31,7 +31,6 @@ final class APIClient {
         self.decoder.dateDecodingStrategy = .iso8601
         
         self.encoder = JSONEncoder()
-        self.encoder.keyEncodingStrategy = .convertToSnakeCase
     }
     
     // MARK: - Request Methods
@@ -63,6 +62,22 @@ final class APIClient {
             requiresAuth: requiresAuth
         )
         request.httpBody = try encoder.encode(body)
+        request.setValue(APIConfig.contentTypeJSON, forHTTPHeaderField: "Content-Type")
+        return try await perform(request)
+    }
+    
+    /// Perform a POST request with raw JSON dictionary (bypasses snake_case encoding)
+    func postJSON<T: Decodable>(
+        endpoint: APIEndpoint,
+        json: [String: Any],
+        requiresAuth: Bool = true
+    ) async throws -> T {
+        var request = try buildRequest(
+            endpoint: endpoint,
+            method: .post,
+            requiresAuth: requiresAuth
+        )
+        request.httpBody = try JSONSerialization.data(withJSONObject: json)
         request.setValue(APIConfig.contentTypeJSON, forHTTPHeaderField: "Content-Type")
         return try await perform(request)
     }
