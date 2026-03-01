@@ -127,22 +127,6 @@ final class APIClient {
         return try await perform(request)
     }
     
-    /// Perform a PATCH request with raw JSON (bypasses snake_case encoder)
-    func patchJSON<T: Decodable>(
-        endpoint: APIEndpoint,
-        json: [String: Any],
-        requiresAuth: Bool = true
-    ) async throws -> T {
-        var request = try buildRequest(
-            endpoint: endpoint,
-            method: .patch,
-            requiresAuth: requiresAuth
-        )
-        request.httpBody = try JSONSerialization.data(withJSONObject: json)
-        request.setValue(APIConfig.contentTypeJSON, forHTTPHeaderField: "Content-Type")
-        return try await perform(request)
-    }
-    
     /// Perform a DELETE request
     func delete<T: Decodable>(
         endpoint: APIEndpoint,

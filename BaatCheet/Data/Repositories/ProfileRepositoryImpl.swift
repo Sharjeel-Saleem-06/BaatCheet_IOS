@@ -62,9 +62,9 @@ final class ProfileRepositoryImpl: ProfileRepository {
     
     // MARK: - Update Profile
     func updateProfile(firstName: String?, lastName: String?) async throws -> UserProfile {
-        struct ProfileSettingsResponseDTO: Decodable {
-            let success: Bool
-            let data: ProfileSettingsDataDTO?
+        struct UpdateProfileRequestDTO: Encodable {
+            let firstName: String?
+            let lastName: String?
         }
         
         struct ProfileSettingsDataDTO: Decodable {
@@ -72,41 +72,49 @@ final class ProfileRepositoryImpl: ProfileRepository {
             let userId: String?
             let fullName: String?
             let preferredName: String?
+            let occupation: String?
+            let education: String?
+            let location: String?
+            let interests: [String]?
+            let preferredLanguage: String?
+            let communicationTone: String?
+            let responseStyle: String?
+            let factCount: Int?
         }
         
-        var json: [String: Any] = [:]
-        if let firstName = firstName { json["firstName"] = firstName }
-        if let lastName = lastName { json["lastName"] = lastName }
-        if let firstName = firstName, let lastName = lastName {
-            json["preferredName"] = "\(firstName) \(lastName)".trimmingCharacters(in: .whitespaces)
+        struct ProfileSettingsResponseDTO: Decodable {
+            let success: Bool
+            let data: ProfileSettingsDataDTO?
         }
         
-        let response: ProfileSettingsResponseDTO = try await apiClient.patchJSON(
+        let request = UpdateProfileRequestDTO(firstName: firstName, lastName: lastName)
+        let response: ProfileSettingsResponseDTO = try await apiClient.patch(
             endpoint: .profileSettings,
-            json: json
+            body: request
         )
         
         guard response.success else {
             throw ProfileError.updateFailed
         }
         
-        if let cachedUser = authRepository.getCachedUser() {
-            return UserProfile(
-                id: cachedUser.id,
-                email: cachedUser.email,
-                firstName: firstName ?? cachedUser.firstName,
-                lastName: lastName ?? cachedUser.lastName,
-                avatar: cachedUser.avatar
-            )
+        if var existing = authRepository.getCachedUser() {
+            var profile = UserProfile(from: existing)
+            if let first = firstName { profile.firstName = first }
+            if let last = lastName { profile.lastName = last }
+            return profile
         }
         
-        return UserProfile(
-            id: response.data?.userId ?? "",
+        let name = [firstName, lastName].compactMap { $0 }.joined(separator: " ")
+        let user = User(
+            id: response.data?.userId ?? response.data?.id ?? "",
             email: "",
             firstName: firstName,
             lastName: lastName,
-            avatar: nil
+            avatar: nil,
+            role: nil,
+            tier: nil
         )
+        return UserProfile(from: user)
     }
     
     // MARK: - Upload Avatar

@@ -335,7 +335,6 @@ struct SettingsView: View {
                   UIApplication.shared.canOpenURL(gmailUrl) {
             UIApplication.shared.open(gmailUrl)
         } else {
-            UIPasteboard.general.string = email
             safariURL = URL(string: "https://baatcheet-web.netlify.app/contact")
         }
     }
@@ -433,22 +432,19 @@ struct EditProfileSheet: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") { dismiss() }
+                        .disabled(isLoading)
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
-                        saveProfile()
+                    if isLoading {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Button("Save") {
+                            saveProfile()
+                        }
+                        .disabled(firstName.trimmed.isEmpty)
                     }
-                    .disabled(firstName.trimmed.isEmpty || isLoading)
                 }
             }
-            .overlay {
-                if isLoading {
-                    Color.black.opacity(0.3)
-                        .ignoresSafeArea()
-                        .overlay(ProgressView().tint(.white).scaleEffect(1.5))
-                }
-            }
-            .disabled(isLoading)
             .onAppear {
                 firstName = chatViewModel.userProfile?.firstName ?? ""
                 lastName = chatViewModel.userProfile?.lastName ?? ""
@@ -487,15 +483,11 @@ struct EditProfileSheet: View {
                     lastName: lastName.trimmed,
                     avatarData: selectedPhotoData
                 )
-                await MainActor.run {
-                    isLoading = false
-                    dismiss()
-                }
+                isLoading = false
+                dismiss()
             } catch {
-                await MainActor.run {
-                    errorMessage = error.localizedDescription
-                    isLoading = false
-                }
+                errorMessage = error.localizedDescription
+                isLoading = false
             }
         }
     }

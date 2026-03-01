@@ -95,6 +95,7 @@ struct MainDrawerView: View {
                     .transition(.move(edge: .leading))
             }
         }
+        .background(Color(UIColor.systemBackground).ignoresSafeArea())
         .animation(.easeOut(duration: 0.2), value: showDrawer)
         .environment(\.showDrawer, $showDrawer)
         .sheet(isPresented: $showAllChats) {
@@ -1612,95 +1613,6 @@ struct ChatDrawerContent: View {
     }
 }
 
-// MARK: - Full Screen Image Viewer
-struct FullScreenImageViewer: View {
-    let url: URL
-    @Environment(\.dismiss) private var dismiss
-    @State private var saving = false
-    @State private var saved = false
-    
-    var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
-            
-            AsyncImage(url: url) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .ignoresSafeArea()
-                case .failure:
-                    VStack(spacing: 12) {
-                        Image(systemName: "photo.trianglebadge.exclamationmark")
-                            .font(.system(size: 50))
-                            .foregroundColor(.gray)
-                        Text("Failed to load image")
-                            .foregroundColor(.gray)
-                    }
-                default:
-                    ProgressView().tint(.white)
-                }
-            }
-            
-            VStack {
-                HStack {
-                    Button(action: { dismiss() }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 28))
-                            .foregroundColor(.white.opacity(0.9))
-                            .shadow(radius: 4)
-                    }
-                    
-                    Spacer()
-                    
-                    Button(action: downloadImage) {
-                        HStack(spacing: 6) {
-                            if saving {
-                                ProgressView().tint(.white)
-                            } else {
-                                Image(systemName: saved ? "checkmark.circle.fill" : "arrow.down.circle.fill")
-                            }
-                            Text(saved ? "Saved" : "Save")
-                        }
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(saved ? Color.green.opacity(0.8) : Color.white.opacity(0.2))
-                        .cornerRadius(20)
-                    }
-                    .disabled(saving)
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
-                
-                Spacer()
-            }
-        }
-    }
-    
-    private func downloadImage() {
-        saving = true
-        Task {
-            do {
-                let (data, _) = try await URLSession.shared.data(from: url)
-                if let uiImage = UIImage(data: data) {
-                    UIImageWriteToSavedPhotosAlbum(uiImage, nil, nil, nil)
-                    await MainActor.run {
-                        saved = true
-                        saving = false
-                    }
-                    try? await Task.sleep(nanoseconds: 2_000_000_000)
-                    await MainActor.run { saved = false }
-                }
-            } catch {
-                await MainActor.run { saving = false }
-            }
-        }
-    }
-}
-
 // MARK: - Environment key for drawer
 private struct ShowDrawerKey: EnvironmentKey {
     static let defaultValue: Binding<Bool> = .constant(false)
@@ -1710,6 +1622,108 @@ extension EnvironmentValues {
     var showDrawer: Binding<Bool> {
         get { self[ShowDrawerKey.self] }
         set { self[ShowDrawerKey.self] = newValue }
+    }
+}
+
+// MARK: - Full Screen Image Viewer
+struct FullScreenImageViewer: View {
+    let url: URL
+    @Environment(\.dismiss) private var dismiss
+    @State private var scale: CGFloat = 1.0
+    @State private var isSaving = false
+    @State private var showSaveAlert = false
+    @State private var saveMessage = ""
+    
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color.black.ignoresSafeArea()
+                
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .scaleEffect(scale)
+                            .gesture(
+                                MagnifyGesture()
+                                    .onChanged { value in
+                                        scale = value.magnification
+                                    }
+                                    .onEnded { _ in
+                                        withAnimation { scale = max(1.0, min(scale, 3.0)) }
+                                    }
+                            )
+                            .onTapGesture(count: 2) {
+                                withAnimation { scale = scale > 1 ? 1 : 2 }
+                            }
+                    case .failure:
+                        VStack(spacing: 12) {
+                            Image(systemName: "photo")
+                                .font(.system(size: 48))
+                                .foregroundColor(.white.opacity(0.5))
+                            Text("Failed to load image")
+                                .foregroundColor(.white.opacity(0.7))
+                        }
+                    default:
+                        ProgressView().tint(.white)
+                    }
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(width: 36, height: 36)
+                            .background(.ultraThinMaterial)
+                            .clipShape(Circle())
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: downloadImage) {
+                        if isSaving {
+                            ProgressView().tint(.white)
+                        } else {
+                            Image(systemName: "arrow.down.circle")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(width: 36, height: 36)
+                                .background(.ultraThinMaterial)
+                                .clipShape(Circle())
+                        }
+                    }
+                    .disabled(isSaving)
+                }
+            }
+            .toolbarBackground(.hidden, for: .navigationBar)
+        }
+        .alert(saveMessage, isPresented: $showSaveAlert) {
+            Button("OK") {}
+        }
+    }
+    
+    private func downloadImage() {
+        isSaving = true
+        Task {
+            do {
+                let (data, _) = try await URLSession.shared.data(from: url)
+                guard let uiImage = UIImage(data: data) else {
+                    saveMessage = "Could not load image data"
+                    showSaveAlert = true
+                    isSaving = false
+                    return
+                }
+                UIImageWriteToSavedPhotosAlbum(uiImage, nil, nil, nil)
+                saveMessage = "Image saved to Photos"
+            } catch {
+                saveMessage = "Failed to download: \(error.localizedDescription)"
+            }
+            showSaveAlert = true
+            isSaving = false
+        }
     }
 }
 
