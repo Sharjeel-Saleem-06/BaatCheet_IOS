@@ -151,14 +151,14 @@ struct EmailAuthView: View {
                 
                 // Footer links (matching Android: 13sp gray underline)
                 HStack(spacing: 4) {
-                    Link("Terms of Use", destination: URL(string: "https://baatcheet.app/terms")!)
+                    Link("Terms of Use", destination: URL(string: "https://baatcheet-web.netlify.app/terms")!)
                         .font(.system(size: 13))
                         .foregroundColor(.gray)
                         .underline()
                     Text("and")
                         .font(.system(size: 13))
                         .foregroundColor(.gray)
-                    Link("Privacy Policy", destination: URL(string: "https://baatcheet.app/privacy")!)
+                    Link("Privacy Policy", destination: URL(string: "https://baatcheet-web.netlify.app/privacy")!)
                         .font(.system(size: 13))
                         .foregroundColor(.gray)
                         .underline()

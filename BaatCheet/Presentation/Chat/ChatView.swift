@@ -115,7 +115,7 @@ struct ChatView: View {
                                 onSpeak: { chatViewModel.speakMessage(message) },
                                 onLike: { chatViewModel.submitFeedback(messageId: message.id, isLike: true) },
                                 onDislike: { chatViewModel.submitFeedback(messageId: message.id, isLike: false) },
-                                onRegenerate: { chatViewModel.regenerateResponse() }
+                                onRegenerate: { chatViewModel.regenerateResponse(for: message) }
                             )
                             .id(message.id)
                         }
@@ -460,10 +460,7 @@ struct MessageBubbleView: View {
                         }
                         
                         if !message.content.isEmpty {
-                            Text(message.content)
-                                .font(.system(size: 15))
-                                .foregroundColor(.primary)
-                                .textSelection(.enabled)
+                            MarkdownTextView(content: message.content, fontSize: 15)
                         }
                     }
                     

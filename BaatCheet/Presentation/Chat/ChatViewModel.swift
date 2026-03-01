@@ -376,19 +376,29 @@ final class ChatViewModel: ObservableObject {
     
     @MainActor
     func updateProfile(firstName: String, lastName: String, avatarData: Data?) async throws {
+        var avatarUrl: String? = userProfile?.avatar
+        
         if let avatarData = avatarData {
-            let avatarUrl = try await profileRepository.uploadAvatar(
-                imageData: avatarData,
-                fileName: "avatar_\(UUID().uuidString).jpg"
-            )
-            userProfile?.avatar = avatarUrl
+            do {
+                avatarUrl = try await profileRepository.uploadAvatar(
+                    imageData: avatarData,
+                    fileName: "avatar_\(UUID().uuidString).jpg"
+                )
+            } catch {
+                print("Avatar upload failed (continuing with name update): \(error)")
+            }
         }
         
         let updated = try await profileRepository.updateProfile(
             firstName: firstName.isEmpty ? nil : firstName,
             lastName: lastName.isEmpty ? nil : lastName
         )
-        userProfile = updated
+        
+        var profile = updated
+        if let url = avatarUrl {
+            profile.avatar = url
+        }
+        userProfile = profile
     }
     
     // MARK: - Sharing
@@ -459,46 +469,42 @@ final class ChatViewModel: ObservableObject {
     }
     
     // MARK: - Regenerate
-    func regenerateResponse() {
+    func regenerateResponse(for message: ChatMessage) {
         guard let conversationId = currentConversationId else { return }
         
         Task {
-            // Remove last assistant message
-            if let lastMessage = messages.last, lastMessage.role == .assistant {
-                messages.removeLast()
-            }
-            
-            // Add streaming placeholder
-            let streamingMessage = ChatMessage(
-                content: "",
-                role: .assistant,
-                isStreaming: true
-            )
-            messages.append(streamingMessage)
-            
-            isSending = true
-            
-            do {
-                let result = try await chatRepository.regenerateResponse(conversationId: conversationId)
+            if let messageIndex = messages.firstIndex(where: { $0.id == message.id }),
+               messages[messageIndex].role == .assistant {
+                messages.remove(at: messageIndex)
                 
-                // Update streaming message
-                if let lastIndex = messages.indices.last,
-                   messages[lastIndex].isStreaming {
-                    messages[lastIndex] = result
-                    messages[lastIndex].isStreaming = false
+                let streamingMessage = ChatMessage(
+                    content: "",
+                    role: .assistant,
+                    isStreaming: true
+                )
+                messages.insert(streamingMessage, at: messageIndex)
+                
+                isSending = true
+                
+                do {
+                    let result = try await chatRepository.regenerateResponse(conversationId: conversationId)
+                    
+                    if let streamIdx = messages.firstIndex(where: { $0.isStreaming }) {
+                        messages[streamIdx] = result
+                        messages[streamIdx].isStreaming = false
+                    }
+                } catch {
+                    if let streamIdx = messages.firstIndex(where: { $0.isStreaming }) {
+                        messages[streamIdx] = ChatMessage(
+                            content: "Failed to regenerate response. Please try again.",
+                            role: .assistant,
+                            isStreaming: false
+                        )
+                    }
                 }
-            } catch {
-                if let lastIndex = messages.indices.last,
-                   messages[lastIndex].isStreaming {
-                    messages[lastIndex] = ChatMessage(
-                        content: "Failed to regenerate response. Please try again.",
-                        role: .assistant,
-                        isStreaming: false
-                    )
-                }
+                
+                isSending = false
             }
-            
-            isSending = false
         }
     }
     

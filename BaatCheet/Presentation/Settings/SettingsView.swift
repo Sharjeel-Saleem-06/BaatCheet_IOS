@@ -228,7 +228,7 @@ struct SettingsView: View {
     private var aboutLegalSection: some View {
         Section {
             DisclosureGroup(isExpanded: $aboutExpanded) {
-                Button(action: { safariURL = URL(string: "https://baatcheet.app/privacy") }) {
+                Button(action: { safariURL = URL(string: "https://baatcheet-web.netlify.app/privacy") }) {
                     HStack {
                         Label("Privacy Policy", systemImage: "hand.raised")
                             .foregroundColor(.primary)
@@ -239,7 +239,7 @@ struct SettingsView: View {
                     }
                 }
                 
-                Button(action: { safariURL = URL(string: "https://baatcheet.app/terms") }) {
+                Button(action: { safariURL = URL(string: "https://baatcheet-web.netlify.app/terms") }) {
                     HStack {
                         Label("Terms of Service", systemImage: "doc.text")
                             .foregroundColor(.primary)
@@ -336,6 +336,7 @@ struct SettingsView: View {
             UIApplication.shared.open(gmailUrl)
         } else {
             UIPasteboard.general.string = email
+            safariURL = URL(string: "https://baatcheet-web.netlify.app/contact")
         }
     }
 }
@@ -440,6 +441,14 @@ struct EditProfileSheet: View {
                     .disabled(firstName.trimmed.isEmpty || isLoading)
                 }
             }
+            .overlay {
+                if isLoading {
+                    Color.black.opacity(0.3)
+                        .ignoresSafeArea()
+                        .overlay(ProgressView().tint(.white).scaleEffect(1.5))
+                }
+            }
+            .disabled(isLoading)
             .onAppear {
                 firstName = chatViewModel.userProfile?.firstName ?? ""
                 lastName = chatViewModel.userProfile?.lastName ?? ""
@@ -478,11 +487,15 @@ struct EditProfileSheet: View {
                     lastName: lastName.trimmed,
                     avatarData: selectedPhotoData
                 )
-                isLoading = false
-                dismiss()
+                await MainActor.run {
+                    isLoading = false
+                    dismiss()
+                }
             } catch {
-                errorMessage = error.localizedDescription
-                isLoading = false
+                await MainActor.run {
+                    errorMessage = error.localizedDescription
+                    isLoading = false
+                }
             }
         }
     }

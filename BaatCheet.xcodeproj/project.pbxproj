@@ -38,6 +38,7 @@
 		6F6CCF76E8FA55CA0C33A374 /* AIMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2F70B61F5B7FDA049A5EB16 /* AIMode.swift */; };
 		712F4AFA6B72BB11F9F76EF1 /* ProjectDTOs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 405F3DC6333621196520FBAB /* ProjectDTOs.swift */; };
 		7398422BE25D51A60CB5D126 /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC72AE90157365DABF7A2DE1 /* Typography.swift */; };
+		797EC07AD020D3648833DB1D /* MarkdownTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E34A8C55EFC50C63F9ABA49 /* MarkdownTextView.swift */; };
 		7B9CD91332341191E0ACB7C9 /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 447DF5C46F7AB0DC80FF7C7F /* KeychainHelper.swift */; };
 		83BC051B9BA078D95C6E1CF5 /* ChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A07D89424CEF32A5DC0AD65 /* ChatViewModel.swift */; };
 		8BCFB1C3D6D5F8FE5EA2175B /* ChatDTOs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55995D49A5D04B189C0E38E3 /* ChatDTOs.swift */; };
@@ -96,6 +97,7 @@
 		447DF5C46F7AB0DC80FF7C7F /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
 		48E10DF57A733CB338AFF8B6 /* NotoSans-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "NotoSans-Regular.ttf"; sourceTree = "<group>"; };
 		4D364D803481EE45575060C6 /* VoiceChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceChatView.swift; sourceTree = "<group>"; };
+		4E34A8C55EFC50C63F9ABA49 /* MarkdownTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownTextView.swift; sourceTree = "<group>"; };
 		527F690A0D01EBD7A83F93E7 /* BaatCheetApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaatCheetApp.swift; sourceTree = "<group>"; };
 		5511C84188F5456E3987C8EC /* EmailAuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailAuthView.swift; sourceTree = "<group>"; };
 		55995D49A5D04B189C0E38E3 /* ChatDTOs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatDTOs.swift; sourceTree = "<group>"; };
@@ -309,6 +311,7 @@
 		8679287CDD4CA60B43888F51 /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				4E34A8C55EFC50C63F9ABA49 /* MarkdownTextView.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -677,6 +680,7 @@
 				9092BF2533721A81A8E2D2B6 /* GetProjectsUseCase.swift in Sources */,
 				7B9CD91332341191E0ACB7C9 /* KeychainHelper.swift in Sources */,
 				0D8FC80EF26EAE153978D9E5 /* LoginView.swift in Sources */,
+				797EC07AD020D3648833DB1D /* MarkdownTextView.swift in Sources */,
 				E986ED4B95BA8C868DD3688C /* ProfileRepository.swift in Sources */,
 				51DD8DABEDAF93477BF68D48 /* ProfileRepositoryImpl.swift in Sources */,
 				0C44DF0474001E6E2466B097 /* Project.swift in Sources */,

@@ -62,28 +62,51 @@ final class ProfileRepositoryImpl: ProfileRepository {
     
     // MARK: - Update Profile
     func updateProfile(firstName: String?, lastName: String?) async throws -> UserProfile {
-        struct UpdateProfileRequestDTO: Encodable {
-            let firstName: String?
-            let lastName: String?
-        }
-        
-        struct ProfileResponseDTO: Decodable {
+        struct ProfileSettingsResponseDTO: Decodable {
             let success: Bool
-            let data: UserDTO?
+            let data: ProfileSettingsDataDTO?
         }
         
-        let request = UpdateProfileRequestDTO(firstName: firstName, lastName: lastName)
-        let response: ProfileResponseDTO = try await apiClient.patch(
+        struct ProfileSettingsDataDTO: Decodable {
+            let id: String?
+            let userId: String?
+            let fullName: String?
+            let preferredName: String?
+        }
+        
+        var json: [String: Any] = [:]
+        if let firstName = firstName { json["firstName"] = firstName }
+        if let lastName = lastName { json["lastName"] = lastName }
+        if let firstName = firstName, let lastName = lastName {
+            json["preferredName"] = "\(firstName) \(lastName)".trimmingCharacters(in: .whitespaces)
+        }
+        
+        let response: ProfileSettingsResponseDTO = try await apiClient.patchJSON(
             endpoint: .profileSettings,
-            body: request
+            json: json
         )
         
-        guard response.success, let user = response.data else {
+        guard response.success else {
             throw ProfileError.updateFailed
         }
         
-        let domainUser = user.toDomain()
-        return UserProfile(from: domainUser)
+        if let cachedUser = authRepository.getCachedUser() {
+            return UserProfile(
+                id: cachedUser.id,
+                email: cachedUser.email,
+                firstName: firstName ?? cachedUser.firstName,
+                lastName: lastName ?? cachedUser.lastName,
+                avatar: cachedUser.avatar
+            )
+        }
+        
+        return UserProfile(
+            id: response.data?.userId ?? "",
+            email: "",
+            firstName: firstName,
+            lastName: lastName,
+            avatar: nil
+        )
     }
     
     // MARK: - Upload Avatar

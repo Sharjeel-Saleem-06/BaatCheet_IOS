@@ -450,6 +450,7 @@ struct ProjectTeamChatView: View {
     let project: Project
     @State private var showTeamSettings = false
     @State private var selectedMessage: TeamChatMessage?
+    @State private var fullScreenImageURL: URL?
     
     var body: some View {
         VStack(spacing: 0) {
@@ -522,6 +523,9 @@ struct ProjectTeamChatView: View {
             TeamMessageActionsSheet(message: message, viewModel: viewModel)
                 .presentationDetents([.height(260)])
         }
+        .fullScreenCover(item: $fullScreenImageURL) { url in
+            FullScreenImageViewer(url: url)
+        }
     }
     
     private func teamMessageBubble(_ message: TeamChatMessage) -> some View {
@@ -582,6 +586,7 @@ struct ProjectTeamChatView: View {
                                 .aspectRatio(contentMode: .fit)
                                 .frame(maxWidth: 200, maxHeight: 200)
                                 .cornerRadius(12)
+                                .onTapGesture { fullScreenImageURL = url }
                         case .failure:
                             HStack(spacing: 6) {
                                 Image(systemName: "photo")
@@ -1603,6 +1608,95 @@ struct ChatDrawerContent: View {
             .padding(.horizontal, 16).padding(.vertical, 8)
             .background(chatViewModel.currentConversationId == conversation.id ? Color.bcPrimary.opacity(0.08) : Color.clear)
             .contentShape(Rectangle())
+        }
+    }
+}
+
+// MARK: - Full Screen Image Viewer
+struct FullScreenImageViewer: View {
+    let url: URL
+    @Environment(\.dismiss) private var dismiss
+    @State private var saving = false
+    @State private var saved = false
+    
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            
+            AsyncImage(url: url) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .ignoresSafeArea()
+                case .failure:
+                    VStack(spacing: 12) {
+                        Image(systemName: "photo.trianglebadge.exclamationmark")
+                            .font(.system(size: 50))
+                            .foregroundColor(.gray)
+                        Text("Failed to load image")
+                            .foregroundColor(.gray)
+                    }
+                default:
+                    ProgressView().tint(.white)
+                }
+            }
+            
+            VStack {
+                HStack {
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 28))
+                            .foregroundColor(.white.opacity(0.9))
+                            .shadow(radius: 4)
+                    }
+                    
+                    Spacer()
+                    
+                    Button(action: downloadImage) {
+                        HStack(spacing: 6) {
+                            if saving {
+                                ProgressView().tint(.white)
+                            } else {
+                                Image(systemName: saved ? "checkmark.circle.fill" : "arrow.down.circle.fill")
+                            }
+                            Text(saved ? "Saved" : "Save")
+                        }
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(saved ? Color.green.opacity(0.8) : Color.white.opacity(0.2))
+                        .cornerRadius(20)
+                    }
+                    .disabled(saving)
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                
+                Spacer()
+            }
+        }
+    }
+    
+    private func downloadImage() {
+        saving = true
+        Task {
+            do {
+                let (data, _) = try await URLSession.shared.data(from: url)
+                if let uiImage = UIImage(data: data) {
+                    UIImageWriteToSavedPhotosAlbum(uiImage, nil, nil, nil)
+                    await MainActor.run {
+                        saved = true
+                        saving = false
+                    }
+                    try? await Task.sleep(nanoseconds: 2_000_000_000)
+                    await MainActor.run { saved = false }
+                }
+            } catch {
+                await MainActor.run { saving = false }
+            }
         }
     }
 }
