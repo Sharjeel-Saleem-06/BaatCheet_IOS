@@ -1,179 +1,210 @@
-# BaatCheet iOS - باتچیت
+# BaatCheet iOS
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Sharjeel-Saleem-06/BaatCheet/main/logo.png" alt="BaatCheet Logo" width="120"/>
+  <img src="https://raw.githubusercontent.com/Sharjeel-Saleem-06/BaatCheet/main/logo.png" alt="BaatCheet Logo" width="140"/>
 </p>
 
 <p align="center">
-  <strong>🤖 AI-Powered Multilingual Chat Application</strong>
+  <strong>AI-Powered Multilingual Chat Application for iOS</strong>
 </p>
 
 <p align="center">
-  <em>Speech • Chat • Code • Image • Voice • Research</em>
+  <em>Chat &bull; Code &bull; Research &bull; Image &bull; Voice &bull; Collaborate</em>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Platform-iOS%2016%2B-blue?style=flat-square&logo=apple" alt="iOS 16+"/>
-  <img src="https://img.shields.io/badge/Swift-5.9-orange?style=flat-square&logo=swift" alt="Swift 5.9"/>
-  <img src="https://img.shields.io/badge/SwiftUI-4.0-blue?style=flat-square&logo=swift" alt="SwiftUI"/>
-  <img src="https://img.shields.io/badge/Architecture-MVVM%20%2B%20Clean-green?style=flat-square" alt="Architecture"/>
-  <img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square" alt="MIT License"/>
+  <img src="https://img.shields.io/badge/Platform-iOS%2016%2B-000?style=flat-square&logo=apple&logoColor=white" alt="iOS 16+"/>
+  <img src="https://img.shields.io/badge/Swift-5.9-F05138?style=flat-square&logo=swift&logoColor=white" alt="Swift 5.9"/>
+  <img src="https://img.shields.io/badge/SwiftUI-4.0-007AFF?style=flat-square&logo=swift&logoColor=white" alt="SwiftUI"/>
+  <img src="https://img.shields.io/badge/Arch-MVVM%20%2B%20Clean-34C759?style=flat-square" alt="Architecture"/>
+  <img src="https://img.shields.io/badge/License-MIT-F5C518?style=flat-square" alt="MIT License"/>
+</p>
+
+<p align="center">
+  <a href="https://baatcheet-web.netlify.app">Web App</a> &bull;
+  <a href="https://github.com/Sharjeel-Saleem-06/BaatCheet">Backend</a> &bull;
+  <a href="https://github.com/Sharjeel-Saleem-06/BaatCheet_Android">Android</a>
 </p>
 
 ---
 
-## 🌍 Multilingual Support
+## About
 
-**Urdu** | **English** | **Hindi** | **Roman Urdu**
+BaatCheet iOS is the native iPhone/iPad client for the BaatCheet AI platform. It delivers the same feature set as the Android and Web versions, built from the ground up with SwiftUI, MVVM + Clean Architecture, and real-time streaming. Every API call, every screen, and every interaction matches the existing ecosystem.
 
 ---
 
-## ✨ Features
+## Features
 
-### 🤖 AI Chat Engine
+### Multi-Provider AI Engine
+
 | Provider | Models | Speed |
 |----------|--------|-------|
-| **Groq** | Llama 3.3 70B, Llama 3.1 8B Instant, Mixtral 8x7B, Gemma 2 9B | ⚡⚡⚡ |
-| **OpenRouter** | Llama 3.1 70B, Gemini 2.0 Flash, Mistral 7B | ⚡⚡ |
-| **DeepSeek** | DeepSeek Chat, DeepSeek Coder | ⚡⚡ |
-| **Gemini** | Gemini 2.5 Flash | ⚡⚡⚡ |
+| **Groq** | Llama 3.3 70B, Llama 3.1 8B, Mixtral 8x7B, Gemma 2 9B | Ultra-fast |
+| **OpenRouter** | Llama 3.1 70B, Gemini 2.0 Flash, Mistral 7B | Fast |
+| **DeepSeek** | DeepSeek Chat, DeepSeek Coder | Fast |
+| **Gemini** | Gemini 2.5 Flash | Ultra-fast |
+| **HuggingFace** | FLUX, Stable Diffusion XL (image gen) | Moderate |
 
-### 🎯 7 Specialized AI Modes
-- **💬 Chat** - Natural multilingual conversations
-- **💻 Code** - Write, debug, explain code
-- **🔍 Research** - Web search with citations
-- **🎨 Image Gen** - Create images from text
-- **📚 Tutor** - Interactive learning assistant
-- **✍️ Creative** - Stories, poems, scripts
-- **🧮 Math** - Step-by-step solutions
+### 7 Specialized AI Modes
 
-### 🎙️ Voice & Language
-- **Speech Recognition** - Urdu, English, Hindi, Roman Urdu
-- **Text-to-Speech Voices**:
-  - 🇵🇰 **Urdu**: Asad (Male), Uzma (Female)
-  - 🇺🇸 **English**: Guy (Male), Jenny (Female)
+- **Chat** &mdash; Natural multilingual conversations (Urdu, English, Hindi, Roman Urdu)
+- **Code** &mdash; Write, debug, and explain code in 30+ languages
+- **Research** &mdash; Web search with citations and source links
+- **Image Gen** &mdash; Create images from text prompts
+- **Tutor** &mdash; Interactive learning assistant with step-by-step explanations
+- **Creative** &mdash; Stories, poems, scripts, and creative writing
+- **Math** &mdash; Step-by-step mathematical solutions
 
-### 📸 Vision & Image AI
+### Production-Grade Markdown Renderer
+
+The chat experience features a custom markdown renderer comparable to ChatGPT and Gemini:
+
+- **Rich text** &mdash; Bold, italic, bold-italic, strikethrough, inline code, links
+- **Code blocks** &mdash; Dark theme with syntax highlighting for 20+ languages, line numbers, copy-to-clipboard, collapse/expand for long blocks
+- **Tables** &mdash; Dynamic column widths, horizontal scroll, alternating row colors, green accent headers
+- **Lists** &mdash; Bullet and numbered lists with colored markers
+- **Blockquotes** &mdash; Styled with green accent border
+- **Citations** &mdash; Superscript-styled reference numbers
+- **Performance** &mdash; Short-circuits for simple text, truncation for very long content
+
+### Voice & Speech
+
+| Feature | Technology |
+|---------|------------|
+| **Speech-to-Text** | `SFSpeechRecognizer` &mdash; Urdu, English, Hindi |
+| **Text-to-Speech** | `AVSpeechSynthesizer` with voice selection |
+| **Voice Chat** | Full-screen voice interaction with real-time transcription |
+
+### Vision & Image AI
+
 | Feature | Description |
 |---------|-------------|
-| **Image Analysis** | Gemini-powered analysis |
-| **OCR** | 60+ Languages support |
-| **Image Generation** | FLUX, Stable Diffusion XL |
-| **Document Scanning** | PDF, Images |
+| **Image Analysis** | Gemini-powered visual understanding |
+| **OCR** | 60+ language document scanning |
+| **Image Generation** | FLUX, Stable Diffusion XL via HuggingFace |
+| **File Attachments** | PDF, images, documents |
 
-### 👥 Team Collaboration
-- **Projects** - Create unlimited projects
-- **Invite** - Via email with role assignment
-- **Team Chat** - Real-time messaging
-- **Roles**: Admin, Moderator, Viewer
+### Team Collaboration
 
-### 📊 Usage Analytics
-- **Free Daily Limits**: 50 Messages, 10 Image Gens, 10 Voice Messages
-- **Resets every 24 hours**
-- **No credit card required**
+- **Projects** &mdash; Create and manage unlimited AI projects
+- **AI Chat** &mdash; Per-project AI conversations with context
+- **Team Chat** &mdash; Real-time messaging with image support, message actions (copy, reply, delete)
+- **Invitations** &mdash; Invite collaborators via email with role assignment
+- **Roles** &mdash; Owner, Admin, Moderator, Viewer with granular permissions
+- **Settings** &mdash; Project name, description, context, content controls, permissions
+
+### Additional Features
+
+- **Conversation Management** &mdash; Create, rename, pin, archive, delete conversations
+- **Side Drawer** &mdash; Hamburger menu with recent conversations (20 loaded, "View All" pagination)
+- **Share Chat** &mdash; Generate shareable links for any conversation
+- **Deep Linking** &mdash; Open conversations and shared chats via URL
+- **Full-Screen Image Viewer** &mdash; Pinch-to-zoom, double-tap zoom, download to Photos
+- **Dark Mode** &mdash; Full system dark mode support
+- **Session Management** &mdash; Auto-detect expired sessions with login redirect
+- **In-App Browser** &mdash; `SFSafariViewController` for Terms, Privacy, Contact
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
-📦 BaatCheet iOS
-├── 📂 App/                          # App entry point
-│   ├── BaatCheetApp.swift           # Main app
-│   ├── RootView.swift               # Root view controller
-│   └── DeepLinkHandler.swift        # Deep link handling
+BaatCheet/
+├── App/                             # App lifecycle & navigation
+│   ├── BaatCheetApp.swift          # Entry point & dependency setup
+│   ├── RootView.swift              # Auth flow, main drawer, navigation
+│   └── DeepLinkHandler.swift       # Universal links & URL schemes
 │
-├── 📂 Core/                         # Core utilities
-│   ├── DI/
-│   │   └── DependencyContainer.swift
-│   ├── Extensions/
-│   │   ├── View+Extensions.swift
-│   │   ├── String+Extensions.swift
-│   │   └── Date+Extensions.swift
-│   └── Utilities/
-│       └── KeychainHelper.swift
+├── Core/                            # Shared utilities
+│   ├── DI/DependencyContainer.swift
+│   ├── Extensions/                 # View, String, Date extensions
+│   └── Utilities/KeychainHelper.swift
 │
-├── 📂 Data/                         # Data Layer
+├── Data/                            # Data layer
 │   ├── Network/
-│   │   ├── APIClient.swift          # Network client
-│   │   ├── APIConfig.swift          # Endpoints config
-│   │   └── DTOs/                    # Data Transfer Objects
-│   └── Repositories/                # Repository implementations
+│   │   ├── APIClient.swift         # URLSession async/await + SSE streaming
+│   │   ├── APIConfig.swift         # Endpoint definitions
+│   │   └── DTOs/                   # Decodable response models
+│   └── Repositories/               # Repository implementations
 │
-├── 📂 Domain/                       # Domain Layer
-│   ├── Models/                      # Business models
-│   ├── Repositories/                # Repository protocols
-│   └── UseCases/                    # Use case implementations
+├── Domain/                          # Pure business logic (no iOS imports)
+│   ├── Models/                     # User, Conversation, Project, Message
+│   ├── Repositories/               # Repository protocols
+│   └── UseCases/                   # Business rules
 │
-├── 📂 Presentation/                 # UI Layer
-│   ├── Splash/
-│   ├── Login/
-│   ├── EmailAuth/
-│   ├── Chat/
-│   ├── Conversations/
-│   ├── Projects/
-│   ├── VoiceChat/
-│   └── Settings/
+├── Presentation/                    # SwiftUI views & ViewModels
+│   ├── Splash/                     # Launch screen
+│   ├── Login/                      # Google Sign-In + Email auth
+│   ├── EmailAuth/                  # Signup, verification, forgot password
+│   ├── Chat/                       # Chat UI, message bubbles, markdown
+│   ├── Conversations/              # Conversation list & management
+│   ├── Projects/                   # Projects, team chat, settings
+│   ├── VoiceChat/                  # Voice interaction screen
+│   ├── Settings/                   # User settings, profile, legal
+│   └── Components/                 # Reusable: MarkdownTextView, etc.
 │
-├── 📂 DesignSystem/                 # Design tokens
-│   ├── Colors/
-│   ├── Typography/
-│   └── Components/
+├── DesignSystem/                    # Design tokens
+│   ├── Colors.swift                # Brand & semantic colors
+│   ├── Typography.swift            # Font system
+│   └── ButtonStyles.swift          # Reusable button styles
 │
-└── 📂 Resources/
-    └── Info.plist
+└── Resources/
+    ├── Info.plist                   # App config, URL schemes
+    └── Assets.xcassets             # App icon, images
 ```
 
 ### MVVM + Clean Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Presentation Layer                    │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐  │
-│  │   SwiftUI   │ -> │  ViewModel  │ -> │   UseCase   │  │
-│  │    Views    │    │  @Published │    │   Protocol  │  │
-│  └─────────────┘    └─────────────┘    └─────────────┘  │
-└─────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────┐
-│                      Domain Layer                        │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐  │
-│  │   Models    │    │ Repository  │    │  Use Cases  │  │
-│  │   (Pure)    │    │  Protocols  │    │   (Logic)   │  │
-│  └─────────────┘    └─────────────┘    └─────────────┘  │
-└─────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────┐
-│                       Data Layer                         │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐  │
-│  │  APIClient  │    │ Repository  │    │  Keychain   │  │
-│  │  (Network)  │    │    Impl     │    │   Helper    │  │
-│  └─────────────┘    └─────────────┘    └─────────────┘  │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│                    Presentation Layer                      │
+│  ┌──────────┐    ┌──────────────┐    ┌────────────────┐  │
+│  │ SwiftUI  │───>│  ViewModel   │───>│    UseCase     │  │
+│  │  Views   │    │  @Published  │    │   (Protocol)   │  │
+│  └──────────┘    └──────────────┘    └────────────────┘  │
+└──────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌──────────────────────────────────────────────────────────┐
+│                      Domain Layer                         │
+│  ┌──────────┐    ┌──────────────┐    ┌────────────────┐  │
+│  │  Models  │    │  Repository  │    │   Use Cases    │  │
+│  │  (Pure)  │    │  Protocols   │    │   (Logic)      │  │
+│  └──────────┘    └──────────────┘    └────────────────┘  │
+└──────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌──────────────────────────────────────────────────────────┐
+│                       Data Layer                          │
+│  ┌──────────┐    ┌──────────────┐    ┌────────────────┐  │
+│  │APIClient │    │  Repository  │    │   Keychain     │  │
+│  │(Network) │    │    Impl      │    │   Helper       │  │
+│  └──────────┘    └──────────────┘    └────────────────┘  │
+└──────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🛠️ Technology Stack
+## Tech Stack
 
 | Category | Technology |
 |----------|------------|
 | **Language** | Swift 5.9 |
-| **UI Framework** | SwiftUI |
+| **UI** | SwiftUI 4.0 |
 | **Architecture** | MVVM + Clean Architecture |
-| **Dependency Injection** | Manual (DependencyContainer) |
-| **Networking** | URLSession + async/await |
-| **Local Storage** | Keychain + UserDefaults |
-| **Authentication** | Email, Google Sign-In, Apple Sign-In |
-| **Speech** | Speech Framework (SFSpeechRecognizer) |
-| **TTS** | AVFoundation (AVSpeechSynthesizer) |
+| **DI** | Manual DependencyContainer |
+| **Networking** | URLSession + async/await + SSE |
+| **Storage** | Keychain (tokens) + UserDefaults (prefs) |
+| **Auth** | Email/Password + Google Sign-In SDK |
+| **Speech** | SFSpeechRecognizer + AVSpeechSynthesizer |
 | **Navigation** | NavigationStack (iOS 16+) |
+| **Markdown** | Custom SwiftUI renderer with syntax highlighting |
+| **Images** | AsyncImage + PhotosPicker |
 
 ---
 
-## 📋 Prerequisites
+## Prerequisites
 
 | Requirement | Version |
 |-------------|---------|
@@ -184,9 +215,9 @@
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
-### 1. Clone the Repository
+### 1. Clone
 
 ```bash
 git clone https://github.com/Sharjeel-Saleem-06/BaatCheet_IOS.git
@@ -195,187 +226,182 @@ cd BaatCheet_IOS
 
 ### 2. Open in Xcode
 
-#### Option A: Using Existing Xcode Project
 ```bash
-open ios/iOSBaseProject.xcodeproj
+open BaatCheet.xcodeproj
 ```
-
-#### Option B: Create New Xcode Project (Recommended)
-1. Open Xcode
-2. File → New → Project
-3. Select **iOS → App**
-4. Configure:
-   - **Product Name**: BaatCheet
-   - **Bundle Identifier**: `com.baatcheet.app`
-   - **Interface**: SwiftUI
-   - **Language**: Swift
-5. Save in the cloned directory
-6. **Drag the `BaatCheet` folder** into the Xcode project navigator
-7. Select "Copy items if needed" and "Create groups"
 
 ### 3. Configure Signing
 
-1. Select the project in navigator
+1. Select the **BaatCheet** project in the navigator
 2. Go to **Signing & Capabilities**
-3. Select your Team
-4. Update Bundle Identifier if needed: `com.yourdomain.baatcheet`
+3. Select your Apple Developer Team
+4. Update **Bundle Identifier** to `com.yourdomain.baatcheet`
 
-### 4. Add Capabilities
+### 4. Configure Google Sign-In
 
-Add the following capabilities:
-- **Sign in with Apple**
-- **Keychain Sharing** (optional, for shared credentials)
+The project uses Google Sign-In SDK. To set up:
 
-### 5. Configure Google Sign-In (Optional)
+1. The GoogleSignIn package is already included via SPM
+2. Ensure `Info.plist` contains the correct `GIDClientID`
+3. URL scheme `com.googleusercontent.apps.YOUR_CLIENT_ID` is configured
 
-1. Add GoogleSignIn package:
-   - File → Add Package Dependencies
-   - URL: `https://github.com/google/GoogleSignIn-iOS`
-2. Add `GOOGLE_CLIENT_ID` to Info.plist
-3. Configure URL scheme: `com.googleusercontent.apps.YOUR_CLIENT_ID`
+### 5. Run
 
-### 6. Add Image Assets
-
-1. Open Assets.xcassets
-2. Add `login_image` (for splash/login background)
-3. Add `AppIcon` (1024x1024)
-
-### 7. Run the App
-
-1. Select a simulator or connected device
-2. Click **Run** (⌘R)
+1. Select **iPhone 15** (or any iOS 16+ simulator/device)
+2. Press **Cmd + R**
+3. The app will connect to `https://sharry121-baatcheet.hf.space/api/v1`
 
 ---
 
-## 🔑 API Endpoints
-
-The app connects to: `https://sharry121-baatcheet.hf.space/api/v1`
+## API Reference
 
 ### Authentication
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/mobile/auth/signin` | Email sign-in |
-| POST | `/mobile/auth/signup` | Email sign-up |
-| POST | `/mobile/auth/verify-email` | Verify email |
-| POST | `/auth/google` | Google Sign-In |
-| POST | `/auth/apple` | Apple Sign-In |
+| `POST` | `/mobile/auth/signin` | Email sign-in |
+| `POST` | `/mobile/auth/signup` | Email sign-up |
+| `POST` | `/mobile/auth/verify-email` | Verify email code |
+| `POST` | `/mobile/auth/forgot-password` | Request password reset |
+| `POST` | `/mobile/auth/reset-password` | Reset password with code |
+| `POST` | `/auth/google` | Google OAuth |
 
 ### Chat
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/chat/completions` | Send message (SSE) |
-| GET | `/chat/modes` | Get AI modes |
-| GET | `/chat/usage` | Get usage stats |
+| `POST` | `/chat/completions` | Send message (SSE streaming) |
+| `GET` | `/chat/modes` | List AI modes |
+| `GET` | `/chat/usage` | Daily usage stats |
+| `POST` | `/chat/share` | Generate share link |
+| `POST` | `/chat/feedback` | Submit message feedback |
 
 ### Conversations
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/conversations` | List conversations |
-| POST | `/conversations` | Create conversation |
-| DELETE | `/conversations/:id` | Delete conversation |
+| `GET` | `/conversations` | List conversations (paginated) |
+| `POST` | `/conversations` | Create conversation |
+| `GET` | `/conversations/:id/messages` | Get messages |
+| `PATCH` | `/conversations/:id` | Rename / pin / archive |
+| `DELETE` | `/conversations/:id` | Delete conversation |
 
 ### Projects
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/projects` | List projects |
-| POST | `/projects` | Create project |
-| POST | `/projects/:id/invite` | Invite collaborator |
+| `GET` | `/projects` | List all projects |
+| `POST` | `/projects` | Create project |
+| `PATCH` | `/projects/:id` | Update project settings |
+| `DELETE` | `/projects/:id` | Delete project |
+| `POST` | `/projects/:id/invite` | Invite collaborator |
+| `GET` | `/projects/:id/members` | List members |
+| `GET` | `/projects/:id/team-chat` | Get team chat messages |
+| `POST` | `/projects/:id/team-chat` | Send team message |
+
+### Profile
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/profile` | Get user profile |
+| `PATCH` | `/profile/settings` | Update profile settings |
+| `POST` | `/profile/avatar` | Upload avatar |
+
+### TTS & Voice
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/tts/generate` | Generate TTS audio |
 
 ---
 
-## 📁 Project Structure Details
-
-### Entry Point
-- **BaatCheetApp.swift**: App lifecycle, DI setup
-- **RootView.swift**: Navigation between auth/main screens
-- **DeepLinkHandler.swift**: Universal links handling
-
-### Design System
-- **Colors.swift**: Brand colors, semantic colors
-- **Typography.swift**: Font definitions
-- **ButtonStyles.swift**: Reusable button styles
-
-### ViewModels
-- **AuthViewModel**: Authentication state management
-- **ChatViewModel**: Chat interactions, messages
-- **ProjectsViewModel**: Project management
-- **VoiceChatViewModel**: Voice chat with speech recognition
-
----
-
-## 🔗 Deep Linking
+## Deep Linking
 
 ### Custom URL Scheme
+
 ```
-baatcheet://conversation/{id}
+baatcheet://conversation/{conversationId}
 baatcheet://shared/{shareId}
 baatcheet://project/{projectId}
 ```
 
 ### Universal Links
+
 ```
 https://baatcheet-web.netlify.app/shared/{shareId}
 ```
 
 ---
 
-## 🎨 Brand Colors
+## Design System
+
+### Brand Colors
 
 | Color | Hex | Usage |
 |-------|-----|-------|
-| Primary | `#1e293b` | Backgrounds, primary elements |
-| Secondary | `#64748b` | Secondary text, icons |
-| Accent Blue | `#3b82f6` | Links, interactive elements |
-| Accent Green | `#22c55e` | Success states |
-| Accent Red | `#ef4444` | Error states |
+| **Slate 800** | `#1e293b` | Primary backgrounds |
+| **Slate 500** | `#64748b` | Secondary text |
+| **Blue 500** | `#3b82f6` | Links, interactive elements |
+| **Green 500** | `#22c55e` | Success, accent highlights |
+| **Red 500** | `#ef4444` | Error states, destructive actions |
+
+### Typography
+
+| Style | Size | Weight |
+|-------|------|--------|
+| Heading 1 | 24pt | Bold |
+| Heading 2 | 20pt | Bold |
+| Heading 3 | 17pt | Semibold |
+| Body | 15pt | Regular |
+| Caption | 13pt | Regular |
+| Code | 12pt | Monospaced |
 
 ---
 
-## 🧪 Testing
+## Usage Limits
 
-```bash
-# Run unit tests
-xcodebuild test -project BaatCheet.xcodeproj -scheme BaatCheet -destination 'platform=iOS Simulator,name=iPhone 15'
-```
-
----
-
-## 📱 App Information
-
-| Property | Value |
-|----------|-------|
-| **Bundle ID** | com.baatcheet.app |
-| **Min iOS** | 16.0 |
-| **Orientation** | Portrait |
-| **Dark Mode** | Supported |
-
----
-
-## 🔄 Related Repositories
-
-| Platform | Repository |
+| Resource | Daily Limit |
 |----------|------------|
-| 🌐 **Main (Backend + Web)** | [BaatCheet](https://github.com/Sharjeel-Saleem-06/BaatCheet) |
-| 📱 **Android** | [BaatCheet_Android](https://github.com/Sharjeel-Saleem-06/BaatCheet_Android) |
-| 🍎 **iOS** | [BaatCheet_IOS](https://github.com/Sharjeel-Saleem-06/BaatCheet_IOS) |
+| Chat Messages | 50 |
+| Image Generations | 10 |
+| Voice Messages | 10 |
+
+Limits reset every 24 hours. No credit card required.
 
 ---
 
-## 👨‍💻 Developer
+## Related Repositories
+
+| Platform | Repository | Status |
+|----------|------------|--------|
+| **Backend + Web** | [BaatCheet](https://github.com/Sharjeel-Saleem-06/BaatCheet) | Production |
+| **Android** | [BaatCheet_Android](https://github.com/Sharjeel-Saleem-06/BaatCheet_Android) | Production |
+| **iOS** | [BaatCheet_IOS](https://github.com/Sharjeel-Saleem-06/BaatCheet_IOS) | Production |
+
+### Live Deployments
+
+| Service | URL |
+|---------|-----|
+| **Web App** | [baatcheet-web.netlify.app](https://baatcheet-web.netlify.app) |
+| **Backend API** | [sharry121-baatcheet.hf.space](https://sharry121-baatcheet.hf.space/api/v1) |
+
+---
+
+## Developer
 
 <p align="center">
   <strong>Muhammad Sharjeel</strong><br/>
-  <em>Full-Stack Developer • Mobile Developer • AI Enthusiast</em>
+  <em>Full-Stack &bull; Mobile &bull; AI</em>
 </p>
 
 <p align="center">
-  <a href="https://github.com/Sharjeel-Saleem-06">GitHub</a> •
+  <a href="https://github.com/Sharjeel-Saleem-06">GitHub</a> &bull;
   <a href="https://linkedin.com/in/sharjeel-saleem">LinkedIn</a>
 </p>
 
 ---
 
-## 📄 License
+## License
 
 ```
 MIT License
@@ -400,5 +426,5 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 ---
 
 <p align="center">
-  Made with ❤️ in Pakistan
+  Made with care in Pakistan
 </p>
