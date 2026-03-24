@@ -26,7 +26,9 @@ struct ChatView: View {
     
     var body: some View {
         VStack(spacing: 0) {
+            connectionBanner
             messagesView
+            typingIndicatorBar
             inputArea
         }
         .navigationTitle(chatViewModel.currentConversationId != nil ? "Chat" : "New Chat")
@@ -97,6 +99,72 @@ struct ChatView: View {
             Button("OK") { chatViewModel.clearError() }
         } message: {
             Text(chatViewModel.error ?? "")
+        }
+    }
+    
+    // MARK: - Connection Banner
+    private var connectionBanner: some View {
+        Group {
+            if chatViewModel.connectionState == .reconnecting {
+                HStack(spacing: 8) {
+                    ProgressView().controlSize(.mini).tint(.white)
+                    Text("Reconnecting...")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.white)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6)
+                .background(Color.orange)
+            } else if chatViewModel.connectionState == .failed {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white)
+                    Text("Connection lost")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.white)
+                    Button("Retry") {
+                        Task { await chatViewModel.connectRealtime() }
+                    }
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(Color.white.opacity(0.2))
+                    .cornerRadius(4)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6)
+                .background(Color.red)
+            }
+        }
+    }
+    
+    // MARK: - Typing Indicator Bar
+    private var typingIndicatorBar: some View {
+        Group {
+            if !chatViewModel.typingUsers.isEmpty {
+                HStack(spacing: 6) {
+                    TypingIndicator()
+                        .scaleEffect(0.6)
+                    
+                    let names = Array(chatViewModel.typingUsers.values)
+                    if names.count == 1 {
+                        Text("\(names[0]) is typing...")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                    } else {
+                        Text("\(names.count) people are typing...")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 4)
+                .background(Color(UIColor.secondarySystemBackground).opacity(0.5))
+            }
         }
     }
     

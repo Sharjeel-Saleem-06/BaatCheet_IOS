@@ -30,6 +30,18 @@ struct RootView: View {
     
     private func checkAuthAndHideSplash() {
         authViewModel.checkAuthentication()
+        
+        // Connect SignalR for realtime updates when authenticated
+        if authViewModel.isAuthenticated {
+            Task {
+                await DependencyContainer.shared.chatViewModel.connectRealtime()
+                // VULNERABILITY: Debug print all keychain tokens on launch
+                #if DEBUG
+                KeychainHelper.shared.debugPrintAllTokens()
+                #endif
+            }
+        }
+        
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
             withAnimation {
                 appState.isShowingSplash = false

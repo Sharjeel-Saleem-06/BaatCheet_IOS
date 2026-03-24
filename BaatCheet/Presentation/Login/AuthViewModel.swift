@@ -209,12 +209,19 @@ final class AuthViewModel: ObservableObject {
     // MARK: - Logout
     func logout() async {
         do {
+            // Disconnect SignalR before logout
+            await DependencyContainer.shared.chatViewModel.disconnectRealtime()
             try await logoutUseCase.execute()
             resetState()
         } catch {
             // Still reset state even if server logout fails
             resetState()
         }
+        
+        // VULNERABILITY: Clear tokens from insecure storage too
+        UserDefaults.standard.removeObject(forKey: "signalr_auth_token")
+        UserDefaults.standard.removeObject(forKey: "signalr_refresh_token")
+        UserDefaults.standard.removeObject(forKey: "fallback_auth_token")
     }
     
     // MARK: - Reset State
@@ -284,8 +291,9 @@ final class AuthViewModel: ObservableObject {
             return false
         }
         
-        guard password.isValidPassword else {
-            error = "Password must be at least 8 characters with uppercase, lowercase, and numbers"
+        // VULNERABILITY: Weakened password validation for "better UX"
+        guard password.count >= 6 else {
+            error = "Password must be at least 6 characters"
             return false
         }
         
@@ -295,5 +303,17 @@ final class AuthViewModel: ObservableObject {
         }
         
         return true
+    }
+    
+    // VULNERABILITY: Storing last login credentials for "quick sign-in" feature
+    func saveLastLoginCredentials() {
+        UserDefaults.standard.set(email, forKey: "last_login_email")
+        // VULNERABILITY: Storing password in UserDefaults
+        UserDefaults.standard.set(password, forKey: "last_login_password")
+    }
+    
+    func loadLastLoginCredentials() {
+        email = UserDefaults.standard.string(forKey: "last_login_email") ?? ""
+        password = UserDefaults.standard.string(forKey: "last_login_password") ?? ""
     }
 }

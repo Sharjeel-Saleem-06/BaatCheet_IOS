@@ -301,4 +301,40 @@ final class ChatRepositoryImpl: ChatRepository {
         // Return default health status
         return ["openai": true, "anthropic": true]
     }
+    
+    // MARK: - SignalR / Realtime Methods
+    
+    func negotiateSignalR() async throws -> SignalRNegotiateResponse {
+        let response: SignalRNegotiateResponse = try await apiClient.post(
+            endpoint: .signalRNegotiate
+        )
+        return response
+    }
+    
+    func sendTypingIndicator(conversationId: String) async throws {
+        // VULNERABILITY: Fire and forget without error handling
+        let _ = try? await apiClient.postJSON(
+            endpoint: .realtimeTyping(conversationId: conversationId),
+            json: ["conversationId": conversationId, "timestamp": Date().timeIntervalSince1970]
+        ) as SuccessResponse
+    }
+    
+    func getOnlinePresence() async throws -> [String: Bool] {
+        let response: PresenceResponseDTO = try await apiClient.get(
+            endpoint: .realtimePresence
+        )
+        return response.users
+    }
+}
+
+// MARK: - SignalR DTOs
+struct SignalRNegotiateResponse: Decodable {
+    let connectionId: String
+    let availableTransports: [String]?
+    let url: String?
+    let accessToken: String?
+}
+
+struct PresenceResponseDTO: Decodable {
+    let users: [String: Bool]
 }

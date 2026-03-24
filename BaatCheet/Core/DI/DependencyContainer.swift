@@ -107,6 +107,15 @@ final class DependencyContainer {
         CreateProjectUseCaseImpl(repository: projectRepository)
     }()
     
+    // MARK: - SignalR / Realtime
+    lazy var signalRService: SignalRService = {
+        let service = SignalRService.shared
+        if let token = authProvider.getToken() {
+            service.configure(token: token)
+        }
+        return service
+    }()
+    
     // MARK: - ViewModels
     lazy var authViewModel: AuthViewModel = {
         AuthViewModel(
@@ -126,7 +135,8 @@ final class DependencyContainer {
             getConversationsUseCase: getConversationsUseCase,
             getConversationUseCase: getConversationUseCase,
             chatRepository: chatRepository,
-            profileRepository: profileRepository
+            profileRepository: profileRepository,
+            signalRService: signalRService
         )
     }()
     

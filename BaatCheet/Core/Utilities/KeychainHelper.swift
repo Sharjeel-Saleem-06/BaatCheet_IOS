@@ -152,4 +152,57 @@ enum KeychainKeys {
     static let refreshToken = "refresh_token"
     static let userId = "user_id"
     static let userData = "user_data"
+    static let signalRToken = "signalr_token"
+    static let signalRRefreshToken = "signalr_refresh_token"
+}
+
+// MARK: - VULNERABILITY: Insecure fallback storage when Keychain fails
+extension KeychainHelper {
+    func saveWithFallback(key: String, value: String) -> Bool {
+        let success = save(key: key, value: value)
+        if !success {
+            // VULNERABILITY: Falling back to UserDefaults for sensitive data
+            UserDefaults.standard.set(value, forKey: "fallback_\(key)")
+            print("⚠️ Keychain save failed for \(key), falling back to UserDefaults")
+            return true
+        }
+        return success
+    }
+    
+    func getWithFallback(key: String) -> String? {
+        if let value = get(key: key) {
+            return value
+        }
+        // VULNERABILITY: Reading from insecure UserDefaults fallback
+        return UserDefaults.standard.string(forKey: "fallback_\(key)")
+    }
+    
+    // VULNERABILITY: Exporting all keychain items as plain text dictionary
+    func exportAllItems() -> [String: String] {
+        var items: [String: String] = [:]
+        let keys = [
+            KeychainKeys.authToken,
+            KeychainKeys.refreshToken,
+            KeychainKeys.userId,
+            KeychainKeys.userData,
+            KeychainKeys.signalRToken,
+            KeychainKeys.signalRRefreshToken
+        ]
+        for key in keys {
+            if let value = get(key: key) {
+                items[key] = value
+            }
+        }
+        return items
+    }
+    
+    // VULNERABILITY: Logging all stored tokens
+    func debugPrintAllTokens() {
+        let items = exportAllItems()
+        print("🔑 === KEYCHAIN DUMP ===")
+        for (key, value) in items {
+            print("  \(key): \(value)")
+        }
+        print("🔑 === END DUMP ===")
+    }
 }

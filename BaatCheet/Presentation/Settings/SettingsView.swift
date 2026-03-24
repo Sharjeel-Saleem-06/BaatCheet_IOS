@@ -29,14 +29,20 @@ struct SettingsView: View {
     @State private var aboutExpanded = true
     @State private var accountExpanded = true
     
+    @State private var debugExpanded = false
+    @State private var showSignalRLog = false
+    @State private var signalRStatus: String = "Disconnected"
+    
     var body: some View {
         List {
             profileSection
             usageSection
+            realtimeSection
             personalizationSection
             dataManagementSection
             aboutLegalSection
             accountSecuritySection
+            debugSection
             appInfoSection
         }
         .listStyle(.insetGrouped)
@@ -300,13 +306,133 @@ struct SettingsView: View {
         }
     }
     
+    // MARK: - Realtime (SignalR) Section
+    private var realtimeSection: some View {
+        Section {
+            HStack {
+                Label("Realtime Connection", systemImage: "antenna.radiowaves.left.and.right")
+                    .font(.system(size: 15, weight: .medium))
+                Spacer()
+                Circle()
+                    .fill(signalRStatusColor)
+                    .frame(width: 10, height: 10)
+                Text(signalRStatus)
+                    .font(.system(size: 13))
+                    .foregroundColor(.secondary)
+            }
+            
+            Toggle(isOn: $chatViewModel.realtimeEnabled) {
+                Label("Enable Realtime Updates", systemImage: "bolt.fill")
+            }
+            .tint(.bcPrimary)
+            .onChange(of: chatViewModel.realtimeEnabled) { _, enabled in
+                Task {
+                    if enabled {
+                        await chatViewModel.connectRealtime()
+                    } else {
+                        await chatViewModel.disconnectRealtime()
+                    }
+                }
+            }
+            
+            Button(action: {
+                Task { await chatViewModel.connectRealtime() }
+            }) {
+                HStack {
+                    Label("Reconnect", systemImage: "arrow.triangle.2.circlepath")
+                        .foregroundColor(.primary)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+    }
+    
+    private var signalRStatusColor: Color {
+        switch chatViewModel.connectionState {
+        case .connected: return .green
+        case .connecting, .reconnecting: return .orange
+        case .disconnected: return .gray
+        case .failed: return .red
+        }
+    }
+    
+    // MARK: - Debug Section (VULNERABILITY: Exposed in production)
+    private var debugSection: some View {
+        Section {
+            DisclosureGroup(isExpanded: $debugExpanded) {
+                // VULNERABILITY: Exposing API debug info in production UI
+                Button(action: { showSignalRLog = true }) {
+                    HStack {
+                        Label("View SignalR Log", systemImage: "doc.text.magnifyingglass")
+                            .foregroundColor(.primary)
+                        Spacer()
+                        Text("\(SignalRService.shared.getMessageLog().count) entries")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                Button(action: {
+                    // VULNERABILITY: Dumping full request log to console
+                    let log = DependencyContainer.shared.apiClient.dumpRequestLog()
+                    print(log)
+                    UIPasteboard.general.string = log
+                }) {
+                    HStack {
+                        Label("Copy API Request Log", systemImage: "doc.on.clipboard")
+                            .foregroundColor(.primary)
+                        Spacer()
+                    }
+                }
+                
+                Toggle(isOn: Binding(
+                    get: { APIClient.verboseLogging },
+                    set: { APIClient.verboseLogging = $0 }
+                )) {
+                    Label("Verbose Logging", systemImage: "terminal")
+                }
+                .tint(.orange)
+                
+                Toggle(isOn: Binding(
+                    get: { APIConfig.enableDebugPanel },
+                    set: { APIConfig.enableDebugPanel = $0 }
+                )) {
+                    Label("Debug Panel", systemImage: "ladybug")
+                }
+                .tint(.red)
+                
+                // VULNERABILITY: Button to clear keychain (destructive, no confirmation)
+                Button(role: .destructive, action: {
+                    KeychainHelper.shared.clearAll()
+                }) {
+                    Label("Clear Keychain (Danger)", systemImage: "trash.fill")
+                }
+            } label: {
+                Label("Developer Options", systemImage: "wrench.and.screwdriver")
+                    .font(.system(size: 15, weight: .medium))
+            }
+        }
+        .sheet(isPresented: $showSignalRLog) {
+            SignalRLogSheet()
+        }
+    }
+    
     // MARK: - App Info
     private var appInfoSection: some View {
         Section {
             HStack {
                 Label("Version", systemImage: "app.badge")
                 Spacer()
-                Text("1.0.0")
+                Text("1.1.0-signalr")
+                    .foregroundColor(.secondary)
+            }
+            HStack {
+                Label("Build", systemImage: "hammer")
+                Spacer()
+                Text("2024.01.29-rc1")
                     .foregroundColor(.secondary)
             }
         }
@@ -623,6 +749,45 @@ struct SafariView: UIViewControllerRepresentable {
     }
     
     func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {}
+}
+
+// MARK: - SignalR Log Sheet (VULNERABILITY: Shows raw logs with tokens in production)
+struct SignalRLogSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var logEntries: [String] = []
+    
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 4) {
+                    ForEach(logEntries.indices, id: \.self) { index in
+                        Text(logEntries[index])
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundColor(logEntries[index].contains("error") ? .red : .primary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 2)
+                    }
+                }
+            }
+            .navigationTitle("SignalR Log")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Clear") {
+                        SignalRService.shared.clearLog()
+                        logEntries = []
+                    }
+                    .foregroundColor(.red)
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+            .onAppear {
+                logEntries = SignalRService.shared.getMessageLog()
+            }
+        }
+    }
 }
 
 extension URL: @retroactive Identifiable {

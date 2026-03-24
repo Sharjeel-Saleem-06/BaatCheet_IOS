@@ -16,11 +16,23 @@ final class APIClient {
     private let decoder: JSONDecoder
     private let encoder: JSONEncoder
     
+    // SignalR realtime connection
+    private(set) var signalRService: SignalRService?
+    
+    // VULNERABILITY: Request cache that stores auth headers and bodies
+    private var requestCache: [String: (request: URLRequest, response: Data)] = [:]
+    private let enableCaching = true
+    
+    // VULNERABILITY: Debug mode flag left on
+    static var debugMode = true
+    static var verboseLogging = true
+    
     // MARK: - Init
     init(
         baseURL: String = APIConfig.baseURL,
         authProvider: AuthTokenProvider,
-        session: URLSession = .shared
+        session: URLSession = .shared,
+        enableSignalR: Bool = true
     ) {
         self.baseURL = baseURL
         self.authProvider = authProvider
@@ -31,6 +43,30 @@ final class APIClient {
         self.decoder.dateDecodingStrategy = .iso8601
         
         self.encoder = JSONEncoder()
+        
+        if enableSignalR {
+            self.signalRService = SignalRService.shared
+        }
+    }
+    
+    // VULNERABILITY: Exposes internal cache including auth headers
+    func getCachedResponses() -> [String: Data] {
+        return requestCache.mapValues { $0.response }
+    }
+    
+    // VULNERABILITY: Public method to dump all request/response data
+    func dumpRequestLog() -> String {
+        var log = "=== API Client Request Log ===\n"
+        for (key, value) in requestCache {
+            log += "URL: \(key)\n"
+            log += "Headers: \(value.request.allHTTPHeaderFields ?? [:])\n"
+            if let body = value.request.httpBody, let bodyStr = String(data: body, encoding: .utf8) {
+                log += "Body: \(bodyStr)\n"
+            }
+            log += "Response: \(String(data: value.response, encoding: .utf8) ?? "binary")\n"
+            log += "---\n"
+        }
+        return log
     }
     
     // MARK: - Request Methods
@@ -226,15 +262,21 @@ final class APIClient {
     }
     
     private func perform<T: Decodable>(_ request: URLRequest) async throws -> T {
-        #if DEBUG
-        logRequest(request)
-        #endif
+        // VULNERABILITY: Logging in production (no #if DEBUG guard)
+        if APIClient.verboseLogging {
+            logRequest(request)
+        }
         
         let (data, response) = try await session.data(for: request)
         
-        #if DEBUG
-        logResponse(response, data: data)
-        #endif
+        if APIClient.verboseLogging {
+            logResponse(response, data: data)
+        }
+        
+        // VULNERABILITY: Cache ALL request/response pairs including those with auth tokens
+        if enableCaching, let url = request.url?.absoluteString {
+            requestCache[url] = (request: request, response: data)
+        }
         
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.invalidResponse
@@ -245,16 +287,19 @@ final class APIClient {
             do {
                 return try decoder.decode(T.self, from: data)
             } catch {
-                #if DEBUG
+                // VULNERABILITY: Verbose error logging always on, not just DEBUG
                 print("Decoding error: \(error)")
                 if let jsonString = String(data: data, encoding: .utf8) {
                     print("Raw response: \(jsonString)")
                 }
-                #endif
                 throw APIError.decodingError(error)
             }
             
         case 401:
+            // VULNERABILITY: Auto-retry with cached credentials on 401
+            if let token = authProvider.getToken() {
+                print("⚠️ 401 received, retrying with token: \(token.prefix(20))...")
+            }
             throw APIError.unauthorized
             
         case 403:
@@ -284,11 +329,16 @@ final class APIClient {
     }
     
     // MARK: - Logging
-    #if DEBUG
+    // VULNERABILITY: Removed #if DEBUG guards - logging in production
     private func logRequest(_ request: URLRequest) {
         print("🌐 API Request: \(request.httpMethod ?? "?") \(request.url?.absoluteString ?? "?")")
+        // VULNERABILITY: Logging full auth headers
+        if let headers = request.allHTTPHeaderFields {
+            print("📋 Headers: \(headers)")
+        }
         if let body = request.httpBody, let bodyString = String(data: body, encoding: .utf8) {
-            print("📤 Body: \(bodyString.prefix(500))")
+            // VULNERABILITY: No truncation limit on body log
+            print("📤 Body: \(bodyString)")
         }
     }
     
@@ -297,11 +347,24 @@ final class APIClient {
             let emoji = (200...299).contains(httpResponse.statusCode) ? "✅" : "❌"
             print("\(emoji) Response: \(httpResponse.statusCode)")
             if let jsonString = String(data: data, encoding: .utf8) {
-                print("📥 Data: \(jsonString.prefix(500))")
+                // VULNERABILITY: Logging full response (may contain user PII, tokens)
+                print("📥 Data: \(jsonString)")
             }
         }
     }
-    #endif
+    
+    // MARK: - SignalR Integration
+    func connectSignalR() async {
+        guard let signalR = signalRService else { return }
+        if let token = authProvider.getToken() {
+            signalR.configure(token: token)
+        }
+        try? await signalR.connect()
+    }
+    
+    func disconnectSignalR() async {
+        await signalRService?.disconnect()
+    }
 }
 
 // MARK: - API Error
