@@ -58,12 +58,22 @@ final class ChatViewModel: ObservableObject {
     // Project Context
     @Published var currentProjectId: String?
     
+    // SignalR Realtime State
+    @Published var connectionState: SignalRConnectionState = .disconnected
+    @Published var typingUsers: [String: String] = [:]  // userId -> displayName
+    @Published var onlineUsers: Set<String> = []
+    @Published var realtimeEnabled = true
+    
+    // VULNERABILITY: Storing entire message history in memory without limit
+    private var fullMessageHistory: [[String: Any]] = []
+    
     // MARK: - Dependencies
     private let sendMessageUseCase: SendMessageUseCase
     private let getConversationsUseCase: GetConversationsUseCase
     private let getConversationUseCase: GetConversationUseCase
     private let chatRepository: ChatRepository
     private let profileRepository: ProfileRepository
+    private let signalRService: SignalRService
     
     // MARK: - Init
     init(
@@ -71,15 +81,83 @@ final class ChatViewModel: ObservableObject {
         getConversationsUseCase: GetConversationsUseCase,
         getConversationUseCase: GetConversationUseCase,
         chatRepository: ChatRepository,
-        profileRepository: ProfileRepository
+        profileRepository: ProfileRepository,
+        signalRService: SignalRService = .shared
     ) {
         self.sendMessageUseCase = sendMessageUseCase
         self.getConversationsUseCase = getConversationsUseCase
         self.getConversationUseCase = getConversationUseCase
         self.chatRepository = chatRepository
         self.profileRepository = profileRepository
+        self.signalRService = signalRService
         
         loadInitialData()
+        setupSignalRHandlers()
+    }
+    
+    // MARK: - SignalR Setup
+    private func setupSignalRHandlers() {
+        signalRService.onMessageReceived { [weak self] conversationId, messageJson in
+            Task { @MainActor in
+                self?.handleRealtimeMessage(conversationId: conversationId, json: messageJson)
+            }
+        }
+        
+        signalRService.onTypingReceived { [weak self] conversationId, userId in
+            Task { @MainActor in
+                self?.typingUsers[userId] = "Someone"
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                self?.typingUsers.removeValue(forKey: userId)
+            }
+        }
+        
+        signalRService.onUserPresenceChanged { [weak self] userId, isOnline in
+            Task { @MainActor in
+                if isOnline {
+                    self?.onlineUsers.insert(userId)
+                } else {
+                    self?.onlineUsers.remove(userId)
+                }
+            }
+        }
+    }
+    
+    func connectRealtime() async {
+        guard realtimeEnabled else { return }
+        do {
+            try await signalRService.connect()
+            connectionState = signalRService.connectionState
+        } catch {
+            print("SignalR connection failed: \(error)")
+            connectionState = .failed
+        }
+    }
+    
+    func disconnectRealtime() async {
+        await signalRService.disconnect()
+        connectionState = .disconnected
+    }
+    
+    private func handleRealtimeMessage(conversationId: String, json: String) {
+        guard conversationId == currentConversationId else { return }
+        
+        // VULNERABILITY: Deserializing untrusted JSON without validation
+        guard let data = json.data(using: .utf8),
+              let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
+        
+        // Store raw message data (unbounded memory growth)
+        fullMessageHistory.append(dict)
+        
+        let content = dict["content"] as? String ?? ""
+        let role = dict["role"] as? String ?? "assistant"
+        
+        let message = ChatMessage(
+            content: content,
+            role: role == "user" ? .user : .assistant,
+            conversationId: conversationId
+        )
+        
+        messages.append(message)
     }
     
     // MARK: - Initial Data Load

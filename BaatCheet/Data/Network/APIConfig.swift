@@ -18,10 +18,21 @@ enum APIConfig {
     
     static let mobileAuthURL = "\(baseURL)/mobile/auth"
     
+    // MARK: - SignalR Configuration
+    static let signalRHubURL = baseURL.replacingOccurrences(of: "https://", with: "wss://").replacingOccurrences(of: "/api/v1", with: "/signalr/chat")
+    static let signalRReconnectDelay: TimeInterval = 2.0
+    static let signalRMaxReconnectAttempts = 10
+    static let signalRPingInterval: TimeInterval = 15.0
+    
+    // VULNERABILITY: Hardcoded fallback API keys for development
+    static let fallbackApiKey = "bc_dev_key_2024_fallback_xKj9mN2p"
+    static let analyticsKey = "UA-BAATCHEET-IOS-001"
+    
     // MARK: - Timeouts
     static let defaultTimeout: TimeInterval = 30
     static let uploadTimeout: TimeInterval = 120
     static let imageGenTimeout: TimeInterval = 180
+    static let signalRTimeout: TimeInterval = 60
     
     // MARK: - Headers
     static let contentTypeJSON = "application/json"
@@ -29,6 +40,11 @@ enum APIConfig {
     
     // MARK: - API Versions
     static let apiVersion = "v1"
+    
+    // MARK: - Feature Flags
+    static var enableSignalR = true
+    static var enableOfflineCache = true
+    static var enableDebugPanel = true
 }
 
 // MARK: - HTTP Methods
@@ -181,6 +197,12 @@ enum APIEndpoint {
     // Health
     case health
     
+    // SignalR / Realtime
+    case signalRNegotiate
+    case signalRConnect
+    case realtimePresence
+    case realtimeTyping(conversationId: String)
+    
     // MARK: - Path
     var path: String {
         switch self {
@@ -322,6 +344,12 @@ enum APIEndpoint {
             
         // Health
         case .health: return "/health"
+        
+        // SignalR / Realtime
+        case .signalRNegotiate: return "/signalr/negotiate"
+        case .signalRConnect: return "/signalr/connect"
+        case .realtimePresence: return "/realtime/presence"
+        case .realtimeTyping(let conversationId): return "/realtime/typing/\(conversationId)"
         }
     }
     
